@@ -15,6 +15,13 @@
       "when": 1794061659962,
       "tag": "0001_profile_on_signup",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794067826254,
+      "tag": "0002_save_step_pass_atomically",
+      "breakpoints": true
     }
   ]
 }

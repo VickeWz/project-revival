@@ -151,6 +151,41 @@ export type Database = {
           },
         ]
       }
+      completed_activity_passes: {
+        Row: {
+          earned_minutes: number
+          ended_at: string
+          id: string
+          profile_id: string
+          started_at: string
+          steps: number
+        }
+        Insert: {
+          earned_minutes: number
+          ended_at: string
+          id: string
+          profile_id: string
+          started_at: string
+          steps: number
+        }
+        Update: {
+          earned_minutes?: number
+          ended_at?: string
+          id?: string
+          profile_id?: string
+          started_at?: string
+          steps?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "completed_activity_passes_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       downtime_schedules: {
         Row: {
           child_id: string
@@ -350,6 +385,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      complete_step_pass: {
+        Args: {
+          p_active_minutes: number
+          p_day: string
+          p_distance: number
+          p_ended_at: string
+          p_id: string
+          p_started_at: string
+          p_steps: number
+        }
+        Returns: Json
+      }
       is_child_of_profile: { Args: { profile_id: string }; Returns: boolean }
       is_parent_of_profile: { Args: { profile_id: string }; Returns: boolean }
       owns_profile: { Args: { profile_id: string }; Returns: boolean }
