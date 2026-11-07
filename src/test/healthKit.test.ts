@@ -77,7 +77,7 @@ describe('foreground HealthKit sync', () => {
     read.mockResolvedValue({ steps: 2000, distance: 1400, activeMinutes: 15 });
     await vi.advanceTimersByTimeAsync(3000);
     expect(received).toEqual([1000, 2000]);
-    expect(healthKitService.calculateScreenTimeEarned({ steps: received[1], distance: 1400, activeMinutes: 15 })).toBe(10);
+    expect(healthKitService.calculateScreenTimeEarned({ steps: received[1] ?? 0, distance: 1400, activeMinutes: 15 })).toBe(10);
     stop();
     await vi.advanceTimersByTimeAsync(3000);
     expect(read).toHaveBeenCalledTimes(2);

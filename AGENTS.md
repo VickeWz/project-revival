@@ -32,3 +32,4 @@ use the editor.
 - Imported GameRun screens live in `src/screens` and keep react-router-style calls via `src/lib/router-compat.tsx`; route files in `src/routes` only wrap them with guards from `src/components/RouteGuards.tsx`. Why: minimal-diff port of the original app.
 - Profiles (and child screen-time balances) are created by the `handle_new_user` trigger from signup metadata, not by the client. Why: email confirmation means no session exists right after signup.
 - HealthKit reads use one cancellable foreground watcher with non-overlapping queries and a final bounded read at pass completion; unavailable HealthKit never produces simulated pass rewards. Why: prevent stale reads, fabricated steps and updates after unmount.
+- Complete passes through the authenticated `complete_step_pass` transaction with a stable session ID; never update activity and balance separately. Why: retries must not double-credit rewards or leave a partial save.
