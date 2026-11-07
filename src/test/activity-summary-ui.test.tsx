@@ -7,7 +7,7 @@ vi.mock('@/services/healthKit', () => ({ healthKitService: {
   isAvailable: () => mocks.available,
   requestAuthorization: async () => true,
   getTodayData: mocks.read,
-  calculateScreenTimeEarned: (data: { steps: number }) => Math.floor(data.steps / 1000) * 5,
+  calculateScreenTimeEarned: (data: { steps: number }) => Math.floor(data.steps / 200),
 } }));
 import { ActivitySummary } from '@/components/home/ActivitySummary';
 beforeEach(() => { vi.clearAllMocks(); mocks.available = true; });

@@ -14,7 +14,7 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: { from: () => mocks
 vi.mock('@/services/healthKit', () => ({ healthKitService: {
   requestAuthorization: async () => true,
   getPassData: mocks.getPassData,
-  calculateScreenTimeEarned: (data: { steps: number }) => Math.floor(data.steps / 1000) * 5,
+  calculateScreenTimeEarned: (data: { steps: number }) => Math.floor(data.steps / 200),
   watchData: (_read: unknown, onData: typeof mocks.onData) => { mocks.onData = onData; return () => {}; },
 } }));
 

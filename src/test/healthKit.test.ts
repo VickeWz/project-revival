@@ -58,10 +58,11 @@ describe('Capacitor 8 HealthKit adapter', () => {
   });
 });
 describe('screen time rule', () => {
-  it('gives 5 minutes per full 1000 steps', () => {
-    expect(healthKitService.calculateScreenTimeEarned({ steps: 999, distance: 5000, activeMinutes: 30 })).toBe(0);
+  it('gives one minute per full 200 steps', () => {
+    expect(healthKitService.calculateScreenTimeEarned({ steps: 199, distance: 5000, activeMinutes: 30 })).toBe(0);
+    expect(healthKitService.calculateScreenTimeEarned({ steps: 200, distance: 0, activeMinutes: 0 })).toBe(1);
     expect(healthKitService.calculateScreenTimeEarned({ steps: 1000, distance: 0, activeMinutes: 0 })).toBe(5);
-    expect(healthKitService.calculateScreenTimeEarned({ steps: 12572, distance: 0, activeMinutes: 0 })).toBe(60);
+    expect(healthKitService.calculateScreenTimeEarned({ steps: 12572, distance: 0, activeMinutes: 0 })).toBe(62);
   });
 });
 
