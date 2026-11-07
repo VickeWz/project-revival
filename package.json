@@ -13,7 +13,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build:native": "vite build --config vite.native.config.ts",
-    "ios": "vite build --config vite.native.config.ts && cap sync ios"
+    "ios": "cap sync ios",
+    "capacitor:copy:before": "npm run build:native"
   },
   "overrides": {
     "rolldown": "1.2.1"
