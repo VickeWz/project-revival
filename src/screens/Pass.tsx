@@ -532,7 +532,7 @@ export default function Pass() {
                 <h3 className="font-display font-semibold text-foreground">How It Works</h3>
               </div>
               <div className="space-y-2 text-sm text-muted-foreground">
-                <p>• <span className="text-foreground font-medium">5,000 steps = 1 hour</span> of screen time</p>
+                <p>• <span className="text-foreground font-medium">1,000 steps = 5 minutes</span> of screen time</p>
                 <p>• A pass tracks your activity until you end it</p>
                 <p>• Walk, run, or explore to earn more time</p>
                 <p>• Use your balance anytime in Screentime</p>
