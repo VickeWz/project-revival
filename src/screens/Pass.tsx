@@ -12,6 +12,7 @@ import { useNavigate, Link } from "@/lib/router-compat";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { healthKitService } from "@/services/healthKit";
+import { watchPassData } from "@/services/passTracking";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
 import { format } from "date-fns";
@@ -107,11 +108,10 @@ export default function Pass() {
   // Replace cumulative session samples; never add a polled total again.
   useEffect(() => {
     if (!isActive || !session || saving) return;
-    return healthKitService.watchData(
-      () => healthKitService.getPassData(session.startTime),
+    return watchPassData(
+      session,
       (data) => { if (!endingRef.current) { setPassData(data); setSyncError(false); } },
       () => setSyncError(true),
-      1000,
     );
   }, [isActive, session, saving]);
 
