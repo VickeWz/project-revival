@@ -1,3 +1,4 @@
+import { linkChild } from "@/lib/link-child.functions";
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -42,17 +43,10 @@ export default function AddChild() {
         return;
       }
 
-      const response = await supabase.functions.invoke("link-child", {
-        body: { 
-          childEmail: email.trim().toLowerCase(), 
-          childPassword: password 
-        },
+      const result = await linkChild({
+        data: { childEmail: email.trim().toLowerCase(), childPassword: password },
       });
-
-      if (response.error) {
-        setError(response.error.message || "Failed to link child account");
-        return;
-      }
+      const response = { data: result as { error?: string; message?: string; childName?: string } };
 
       if (response.data?.error) {
         setError(response.data.error);
