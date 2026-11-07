@@ -1,10 +1,11 @@
 [
  {"capability":"code","source":"React Router + Vite SPA","outcome":"ported to TanStack Start routes; screens in src/screens","status":"done","next_action":null},
- {"capability":"schema","source":"8 Supabase migrations","outcome":"recreated in Lovable Cloud with grants; fixed screen_time_balance timestamp trigger","status":"done","next_action":null},
+ {"capability":"schema","source":"8 Supabase migrations","outcome":"recreated in Lovable Cloud with grants; fixed screen_time_balance timestamp trigger; original scripts kept in migration-history/ (supabase/migrations is Lovable-managed)","status":"done","next_action":null},
  {"capability":"records","source":"old Supabase project","outcome":"migrate","status":"pending","next_action":"user exports tables as CSV"},
  {"capability":"auth identities","source":"Supabase auth users","outcome":"migrate; first-login verification + new password","status":"pending","next_action":"user exports users (id, email)"},
  {"capability":"link-child function","source":"edge function","outcome":"server function","status":"done","next_action":"verify with a real parent+child"},
  {"capability":"seed-test-users function","source":"edge function with hardcoded test passwords","outcome":"dropped","status":"accepted","next_action":null},
- {"capability":"native HealthKit / Capacitor","source":"capacitor config","outcome":"libraries kept; web falls back","status":"done","next_action":"native shell build is outside the web preview"},
+ {"capability":"native shell config","source":"capacitor.config.ts","outcome":"restored at project root pointing at this project's URL; @capacitor/cli, @capacitor/ios, @capacitor/android installed","status":"done","next_action":"native shell build is outside the web preview"},
+ {"capability":"PWA / iOS shell metadata","source":"index.html + vite-plugin-pwa","outcome":"manifest.webmanifest in public; manifest, apple-touch-icon and 8 splash-screen links in src/routes/__root.tsx head","status":"done","next_action":null},
  {"capability":"verification","source":"-","outcome":"signed-out flow and redirects checked","status":"pending","next_action":"signed-in parent/child flows untested"}
 ]
