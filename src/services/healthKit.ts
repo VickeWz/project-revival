@@ -182,16 +182,8 @@ class HealthKitService {
 
   // Calculate screen time earned based on activity
   calculateScreenTimeEarned(data: HealthData): number {
-    // 1 minute of screen time per 100 steps
-    const stepsMinutes = Math.floor(data.steps / 100);
-    
-    // 2 minutes of screen time per active minute
-    const activeMinutes = data.activeMinutes * 2;
-    
-    // 1 minute per 500 meters walked
-    const distanceMinutes = Math.floor(data.distance / 500);
-    
-    return stepsMinutes + activeMinutes + distanceMinutes;
+    // Every 1000 steps = 5 minutes of screen time
+    return Math.floor(data.steps / 1000) * 5;
   }
 
   isAvailable(): boolean {
