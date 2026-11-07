@@ -1,5 +1,5 @@
-import { screenTimeFromSteps, stepsToNextReward, STEPS_PER_REWARD } from "@/lib/screen-time";
 // @ts-nocheck -- imported code written for a looser TypeScript config
+import { screenTimeFromSteps, stepsToNextReward, STEPS_PER_REWARD } from "@/lib/screen-time";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
