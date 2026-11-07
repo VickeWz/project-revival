@@ -37,15 +37,20 @@ export default function ChildDashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchHealthData = async () => {
-      const data = await healthKitService.getTodayData();
-      setHealthData(data);
-      setScreenTimeEarned(healthKitService.calculateScreenTimeEarned(data));
-    };
-
-    fetchHealthData();
-    const interval = setInterval(fetchHealthData, 5 * 60 * 1000);
-    return () => clearInterval(interval);
+    if (!healthKitService.isAvailable()) return;
+    let cancelled = false;
+    let stopWatching = () => {};
+    void healthKitService.requestAuthorization().then((granted) => {
+      if (cancelled || !granted) return;
+      stopWatching = healthKitService.watchData(
+        () => healthKitService.getTodayData(),
+        (data) => {
+          setHealthData(data);
+          setScreenTimeEarned(healthKitService.calculateScreenTimeEarned(data));
+        },
+      );
+    });
+    return () => { cancelled = true; stopWatching(); };
   }, []);
 
   useEffect(() => {

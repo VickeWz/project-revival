@@ -30,7 +30,7 @@ export default function HelpSupport() {
     {
       icon: <Zap className="w-4 h-4" />,
       question: "How do I earn screen time?",
-      answer: "Start an Activity Pass from your dashboard and get moving! Every 100 meters you walk or run earns you 1 minute of screen time. The app uses your device's HealthKit to track your activity automatically.",
+      answer: "Start an Activity Pass from your dashboard and get moving! Every 1000 steps earns you 5 minutes of screen time. Steps are read from Apple Health; new samples may arrive with a delay.",
     },
     {
       icon: <Users className="w-4 h-4" />,
