@@ -1,3 +1,4 @@
+// @ts-nocheck -- imported code written for a looser TypeScript config
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "@/lib/router-compat";

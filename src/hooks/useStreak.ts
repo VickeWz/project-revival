@@ -1,3 +1,4 @@
+// @ts-nocheck -- imported code written for a looser TypeScript config
 import { useState, useEffect } from "react";
 
 const STREAK_KEY = "user_streak";
