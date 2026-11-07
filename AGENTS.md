@@ -33,3 +33,4 @@ use the editor.
 - Profiles (and child screen-time balances) are created by the `handle_new_user` trigger from signup metadata, not by the client. Why: email confirmation means no session exists right after signup.
 - HealthKit reads use one cancellable foreground watcher with non-overlapping queries and a final bounded read at pass completion; unavailable HealthKit never produces simulated pass rewards. Why: prevent stale reads, fabricated steps and updates after unmount.
 - Complete passes through the authenticated `complete_step_pass` transaction with a stable session ID; never update activity and balance separately. Why: retries must not double-credit rewards or leave a partial save.
+- Activity summaries send only validated daily step totals to AI Gateway inside an authenticated server function; reward arithmetic remains deterministic and summaries never modify balances. Why: minimize children's data disclosure and keep AI separate from reward accounting.

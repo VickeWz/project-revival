@@ -9,6 +9,7 @@ import { healthKitService, type HealthData } from "@/services/healthKit";
 import { notificationService } from "@/services/notifications";
 import { BottomNav } from "@/components/BottomNav";
 import { StatsSection } from "@/components/home/StatsSection";
+import { ActivitySummary } from "@/components/home/ActivitySummary";
 import logo from "@/assets/logo.png";
 
 const dailyChallenges = [
@@ -198,6 +199,11 @@ export default function ChildDashboard() {
             </div>
           </div>
         </motion.div>
+
+        <ActivitySummary onSync={(data) => {
+          setHealthData(data);
+          setScreenTimeEarned(healthKitService.calculateScreenTimeEarned(data));
+        }} />
 
         {/* How to Earn Screen Time */}
         <motion.div
