@@ -57,7 +57,7 @@ export default function Login() {
           toast.error(error.message);
           setIsLoading(false);
         } else {
-          toast.success('Account created! Welcome to GameRun!');
+          toast.success('Account created! Check your email to confirm it, then sign in.');
           // Redirect handled by AuthRedirect in App.tsx
         }
       }
