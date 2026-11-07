@@ -17,9 +17,10 @@ interface AuthContextType {
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
-  signUp: (email: string, password: string, displayName: string, role: 'parent' | 'child') => Promise<{ error: Error | null }>;
+  signUp: (email: string, password: string, displayName: string, role: 'parent' | 'child') => Promise<{ error: Error | null; needsConfirmation?: boolean }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 // Keep one context instance across hot reloads so provider and consumers always match.
@@ -56,7 +57,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(session?.user ?? null);
 
         if (session?.user) {
-          fetchProfile(session.user.id);
+          const id = session.user.id;
+          // Never await backend calls inside this callback: it can deadlock the auth client.
+          setTimeout(() => fetchProfile(id), 0);
         } else {
           setProfile(null);
           setLoading(false);
@@ -81,7 +84,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, displayName: string, role: 'parent' | 'child') => {
     try {
-      const { error } = await supabase.auth.signUp({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -92,8 +95,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (error) throw error;
+      if (data.session?.user) await fetchProfile(data.session.user.id);
 
-      return { error: null };
+      return { error: null, needsConfirmation: !data.session };
     } catch (error) {
       return { error: error as Error };
     }
@@ -119,6 +123,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 };
 
 
+  const refreshProfile = async () => {
+    const { data } = await supabase.auth.getUser();
+    if (data.user) await fetchProfile(data.user.id);
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -127,7 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, profile, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, profile, loading, signUp, signIn, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
@@ -138,6 +147,7 @@ const fallbackAuth: AuthContextType = {
   signUp: async () => ({ error: new Error('Auth not ready') }),
   signIn: async () => ({ error: new Error('Auth not ready') }),
   signOut: async () => {},
+  refreshProfile: async () => {},
 };
 
 export function useAuth() {

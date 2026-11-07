@@ -1,3 +1,4 @@
+import { stepsToNextReward } from "@/lib/screen-time";
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -189,6 +190,7 @@ export default function ChildDashboard() {
                   {screenTimeEarned}m
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">Earned</p>
+                <p className="text-[10px] text-muted-foreground">{stepsToNextReward(healthData.steps)} steps to +5m</p>
               </motion.div>
             </div>
           </div>
