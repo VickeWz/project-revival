@@ -371,53 +371,6 @@ export default function Pass() {
             </div>
           </motion.div>
 
-          {/* Custom Use Amount */}
-          <div className="mb-6">
-            <h3 className="font-display font-semibold text-lg text-foreground mb-3">Use Screen Time</h3>
-            <Card className="neon-border">
-              <CardContent className="p-4">
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="screentime-amount" className="text-muted-foreground text-sm mb-2 block">
-                      Enter minutes to use
-                    </Label>
-                    <div className="flex gap-3">
-                      <Input
-                        id="screentime-amount"
-                        type="number"
-                        min={1}
-                        max={screenTimeBalance}
-                        placeholder="e.g. 30"
-                        value={customScreenTime}
-                        onChange={(e) => setCustomScreenTime(e.target.value)}
-                        className="flex-1 bg-background/50 border-border/50 text-foreground text-lg font-display"
-                      />
-                      <span className="flex items-center text-muted-foreground">min</span>
-                    </div>
-                  </div>
-                  <Button
-                    className="w-full gradient-hero text-primary-foreground font-semibold"
-                    disabled={!customScreenTime || parseInt(customScreenTime) < 1 || parseInt(customScreenTime) > screenTimeBalance}
-                    onClick={() => {
-                      const mins = parseInt(customScreenTime);
-                      if (mins > 0 && mins <= screenTimeBalance) {
-                        toast.success(`Activated ${mins} minutes of screen time`);
-                        setScreenTimeBalance((prev) => prev - mins);
-                        setCustomScreenTime("");
-                      }
-                    }}
-                  >
-                    Activate Screen Time
-                  </Button>
-                  {screenTimeBalance === 0 && (
-                    <p className="text-xs text-muted-foreground text-center">
-                      No balance available. Start a Pass to earn more!
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </main>
 
         <BottomNav />
@@ -485,7 +438,7 @@ export default function Pass() {
                 <Tv className="w-5 h-5 text-primary-foreground" />
               </div>
               <p className="font-display font-bold text-foreground">Screentime</p>
-              <p className="text-xs text-muted-foreground mt-1">View & use your balance</p>
+              <p className="text-xs text-muted-foreground mt-1">View your balance</p>
             </div>
           </motion.button>
         </div>
