@@ -15,6 +15,7 @@ import { healthKitService } from "@/services/healthKit";
 import { watchPassData } from "@/services/passTracking";
 import { supabase } from "@/integrations/supabase/client";
 import { BottomNav } from "@/components/BottomNav";
+import { ScreenTimeControl } from "@/components/ScreenTimeControl";
 import { format } from "date-fns";
 import logo from "@/assets/logo.png";
 
@@ -371,6 +372,7 @@ export default function Pass() {
             </div>
           </motion.div>
 
+          <ScreenTimeControl />
         </main>
 
         <BottomNav />
@@ -457,9 +459,9 @@ export default function Pass() {
               </div>
               <div className="space-y-2 text-sm text-muted-foreground">
                 <p>• <span className="text-foreground font-medium">200 steg = 1 minut</span> skärmtid</p>
-                <p>• A pass tracks your activity until you end it</p>
-                <p>• Walk, run, or explore to earn more time</p>
-                <p>• Use your balance anytime in Screentime</p>
+                <p>• Passet följer din aktivitet tills du avslutar det</p>
+                <p>• Gå eller spring för att tjäna mer tid</p>
+                <p>• Aktivera intjänade minuter under Skärmtid</p>
               </div>
             </CardContent>
           </Card>

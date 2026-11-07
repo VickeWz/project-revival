@@ -7,8 +7,8 @@ if (process.platform !== 'darwin' || !existsSync(plist)) {
   throw new Error('Run this on your Mac after adding the iOS project (npx cap add ios).');
 }
 const descriptions = {
-  NSMotionUsageDescription: 'GameRun uses motion and fitness data to count your steps and estimate distance during an activity pass.',
-  NSHealthShareUsageDescription: 'GameRun reads your steps and walking distance from Apple Health to calculate earned screen time.',
+  NSMotionUsageDescription: 'GameRun använder rörelsedata för att räkna steg och uppskatta distansen under aktivitetspass.',
+  NSHealthShareUsageDescription: 'GameRun läser steg och gångdistans från Hälsa för att beräkna intjänad skärmtid.',
 };
 for (const [key, value] of Object.entries(descriptions)) {
   // Preserve descriptions already customized in Xcode.
@@ -19,3 +19,4 @@ for (const [key, value] of Object.entries(descriptions)) {
   execFileSync('/usr/libexec/PlistBuddy', ['-c', `Add :${key} string ${value}`, plist]);
 }
 console.log('Motion and Apple Health privacy descriptions are configured. Enable HealthKit in Xcode Signing & Capabilities.');
+console.log('Skärmtid: följ docs/iphone-screen-time.md för Family Controls, App Groups och monitor-tillägget. Dessa kräver Xcode och korrekt signering.');
