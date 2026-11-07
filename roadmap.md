@@ -1,3 +1,4 @@
+- [ ] Lägg till Core Motion, rörelsebehörighet och Hälsa-behörighet i det riktiga Xcode-projektet; bygg och kör ett pass på fysisk iPhone. Blockerat: Xcode-projektet (ios/, Swift, Info.plist och entitlements) finns inte i detta repo; miljön saknar macOS, Xcode och ansluten iPhone. Core Motion kräver NSMotionUsageDescription, inte en separat Signing & Capabilities-post.
 - [x] Uppdatera aktivt pass varje sekund, visa distans i önskade intervall och tjäna 1 minut per 200 steg; 23 relevanta tester passerar och sparregeln är verifierad i databasen.
 - [ ] Verifiera varje fotsteg och distans på iPhone. Blockerat: HealthKit levererar steg i omgångar; exakt fotstegsvis uppdatering kräver en separat iPhone-rörelsemätare och en fysisk iPhone för test.
 - [x] Uppdatera Hälsa-data löpande på startsidan och under pass.
