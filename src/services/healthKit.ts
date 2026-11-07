@@ -136,8 +136,8 @@ class HealthKitService {
   // Uses the same query as the dashboard, so it works wherever the dashboard works.
   async getPassProgress(startDate: Date, baseline: { steps: number; distance: number }): Promise<{ steps: number; distance: number }> {
     if (!this.isNative) {
-      const elapsed = (Date.now() - startDate.getTime()) / 1000;
-      return { steps: Math.floor(elapsed * 1.8), distance: Math.floor(elapsed * 1.4) };
+      // No real step data outside the native iPhone app — never fake steps
+      return { steps: 0, distance: 0 };
     }
     const now = await this.getTodayData();
     return {
