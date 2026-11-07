@@ -13,16 +13,16 @@ const nativeTree = path.resolve(src, "native/routeTree.gen.js");
 // Swap web-only modules for bundled-app versions.
 function nativeSwaps(): Plugin {
   const swaps: Record<string, string> = {
-    "@/lib/link-child.functions": path.resolve(src, "native/link-child.ts"),
-    "@/lib/activity-summary.functions": path.resolve(src, "native/activity-summary.ts"),
+    [path.resolve(src, "lib/link-child.functions")]: path.resolve(src, "native/link-child.ts"),
+    [path.resolve(src, "lib/activity-summary.functions")]: path.resolve(src, "native/activity-summary.ts"),
     "@tanstack/react-start": path.resolve(src, "native/react-start-shim.ts"),
   };
   return {
     name: "gamerun-native-swaps",
     enforce: "pre",
     resolveId(id, importer) {
-      if (process.env.DBG && /start-server-core|react-start/.test(id)) console.log("RID", id, importer);
-      if (swaps[id]) return swaps[id];
+      const key = id.replace(/\.ts$/, "");
+      if (swaps[key]) return swaps[key];
       if (id === "./routeTree.gen" && importer?.split("?")[0].endsWith(path.join("src", "router.tsx"))) return nativeTree;
       return null;
     },
