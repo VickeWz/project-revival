@@ -2,7 +2,7 @@
 import { forwardRef, useCallback, useMemo, type AnchorHTMLAttributes, type ReactNode } from "react";
 import { useRouter, useLocation as useTsLocation } from "@tanstack/react-router";
 
-type NavOpts = { replace?: boolean };
+type NavOpts = { replace?: boolean | undefined };
 
 export function useNavigate() {
   const router = useRouter();
@@ -12,7 +12,7 @@ export function useNavigate() {
         router.history.go(to);
         return;
       }
-      router.navigate({ href: to, replace: opts?.replace });
+      router.navigate({ href: to, replace: !!opts?.replace });
     },
     [router],
   );
@@ -28,7 +28,7 @@ export function useSearchParams(): [URLSearchParams] {
   return [params];
 }
 
-type LinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & { to: string; replace?: boolean };
+type LinkProps = Omit<AnchorHTMLAttributes<HTMLAnchorElement>, "href"> & { to: string; replace?: boolean | undefined };
 
 export const Link = forwardRef<HTMLAnchorElement, LinkProps>(({ to, replace, onClick, ...rest }, ref) => {
   const navigate = useNavigate();

@@ -20,8 +20,8 @@ export const linkChild = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!parentProfile || parentProfile.role !== "parent") return { error: "Only parents can add children" };
 
-    const key = process.env.SUPABASE_PUBLISHABLE_KEY!;
-    const check = createClient(process.env.SUPABASE_URL!, key, {
+    const key = process.env['SUPABASE_PUBLISHABLE_KEY']!;
+    const check = createClient(process.env['SUPABASE_URL']!, key, {
       auth: { persistSession: false, autoRefreshToken: false },
       global: {
         fetch: (input, init) => {
