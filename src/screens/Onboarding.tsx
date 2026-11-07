@@ -67,7 +67,7 @@ const childSteps: OnboardingStep[] = [
 ];
 
 export default function Onboarding() {
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [isCompleting, setIsCompleting] = useState(false);
