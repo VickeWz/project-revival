@@ -9,6 +9,8 @@ const config: CapacitorConfig = {
   server: {
     url: "https://second-life-project-archive.lovable.app?forceHideBadge=true",
     cleartext: true,
+    // Håller appen inne i appen istället för att öppna Safari.
+    allowNavigation: ["second-life-project-archive.lovable.app"],
   },
 };
 
