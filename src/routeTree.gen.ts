@@ -18,6 +18,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as PassRouteImport } from './routes/pass'
 import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
 import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as StatsRouteImport } from './routes/stats'
 import { Route as ParentIndexRouteImport } from './routes/parent.index'
@@ -71,6 +72,11 @@ const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SettingsRoute = SettingsRouteImport.update({
@@ -131,6 +137,7 @@ export interface FileRoutesByFullPath {
   '/pass': typeof PassRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/stats': typeof StatsRoute
   '/parent/add-child': typeof ParentAddChildRoute
@@ -151,6 +158,7 @@ export interface FileRoutesByTo {
   '/pass': typeof PassRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/stats': typeof StatsRoute
   '/parent/add-child': typeof ParentAddChildRoute
@@ -172,6 +180,7 @@ export interface FileRoutesById {
   '/pass': typeof PassRoute
   '/privacy-policy': typeof PrivacyPolicyRoute
   '/profile': typeof ProfileRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/settings': typeof SettingsRoute
   '/stats': typeof StatsRoute
   '/parent/add-child': typeof ParentAddChildRoute
@@ -194,6 +203,7 @@ export interface FileRouteTypes {
     | '/pass'
     | '/privacy-policy'
     | '/profile'
+    | '/reset-password'
     | '/settings'
     | '/stats'
     | '/parent/add-child'
@@ -214,6 +224,7 @@ export interface FileRouteTypes {
     | '/pass'
     | '/privacy-policy'
     | '/profile'
+    | '/reset-password'
     | '/settings'
     | '/stats'
     | '/parent/add-child'
@@ -234,6 +245,7 @@ export interface FileRouteTypes {
     | '/pass'
     | '/privacy-policy'
     | '/profile'
+    | '/reset-password'
     | '/settings'
     | '/stats'
     | '/parent/add-child'
@@ -255,6 +267,7 @@ export interface RootRouteChildren {
   PassRoute: typeof PassRoute
   PrivacyPolicyRoute: typeof PrivacyPolicyRoute
   ProfileRoute: typeof ProfileRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   SettingsRoute: typeof SettingsRoute
   StatsRoute: typeof StatsRoute
   ParentAddChildRoute: typeof ParentAddChildRoute
@@ -329,6 +342,13 @@ declare module '@tanstack/react-router' {
       path: '/profile'
       fullPath: '/profile'
       preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/settings': {
@@ -407,6 +427,7 @@ const rootRouteChildren: RootRouteChildren = {
   PassRoute: PassRoute,
   PrivacyPolicyRoute: PrivacyPolicyRoute,
   ProfileRoute: ProfileRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   SettingsRoute: SettingsRoute,
   StatsRoute: StatsRoute,
   ParentAddChildRoute: ParentAddChildRoute,
