@@ -1,3 +1,4 @@
-- [ ] Uppdatera Hälsa-data löpande på startsidan och under pass.
-- [ ] Beräkna och spara passets skärmtid från steg, inte sträcka.
-- [ ] Testa synkning och omräkning; ange vad som kräver en riktig iPhone.
+- [x] Uppdatera Hälsa-data löpande på startsidan och under pass.
+- [x] Beräkna och spara passets skärmtid från steg, inte sträcka.
+- [x] Automatiska tester av synkning, omräkning och återförsök passerar.
+- [ ] Verifiera riktiga HealthKit-steg och sparad skärmtid på iPhone. Blockerat: ingen iPhone kör appen här och inget konto kunde återställas för inloggad kontroll.
