@@ -1,7 +1,7 @@
 import { Capacitor, registerPlugin, type PluginListenerHandle } from '@capacitor/core';
 import { healthKitService, type HealthData } from '@/services/healthKit';
 
-interface MotionReading { sessionId: string; steps: number; distance?: number }
+interface MotionReading { sessionId: string; steps: number; distance?: number | undefined }
 interface MotionPlugin {
   start(options: { sessionId: string; startedAt: number }): Promise<void>;
   stop(options: { sessionId: string }): Promise<void>;

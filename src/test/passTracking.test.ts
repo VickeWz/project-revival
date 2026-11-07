@@ -3,14 +3,14 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   available: true,
   healthData: undefined as undefined | ((data: { steps: number; distance: number; activeMinutes: number }) => void),
-  events: {} as Record<string, (data: any) => void>,
+  events: {} as { motionUpdate?: (data: any) => void; motionError?: (data: any) => void },
   start: vi.fn(), stop: vi.fn(), remove: vi.fn(), stopHealth: vi.fn(),
 }));
 vi.mock('@capacitor/core', () => ({
   Capacitor: { getPlatform: () => 'ios', isPluginAvailable: () => mocks.available },
   registerPlugin: () => ({
     start: mocks.start, stop: mocks.stop,
-    addListener: async (event: string, callback: (data: any) => void) => {
+    addListener: async (event: 'motionUpdate' | 'motionError', callback: (data: any) => void) => {
       mocks.events[event] = callback;
       return { remove: mocks.remove };
     },
