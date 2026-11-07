@@ -4,6 +4,7 @@ import { RefreshCw, Sparkles, LoaderCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { healthKitService, type HealthData } from '@/services/healthKit';
 import { summarizeActivity } from '@/lib/activity-summary.functions';
+import { stepsToNextMinute } from '@/lib/pass-metrics';
 
 export function ActivitySummary({ onSync }: { onSync: (data: HealthData) => void }) {
   const summarize = useServerFn(summarizeActivity);
@@ -25,7 +26,7 @@ export function ActivitySummary({ onSync }: { onSync: (data: HealthData) => void
       const data = await healthKitService.getTodayData();
       if (!mounted.current) return;
       onSync(data);
-      setResult({ steps: data.steps, minutes: healthKitService.calculateScreenTimeEarned(data), stepsToNextReward: 1000 - data.steps % 1000, summary: null, error: null });
+      setResult({ steps: data.steps, minutes: healthKitService.calculateScreenTimeEarned(data), stepsToNextReward: stepsToNextMinute(data.steps), summary: null, error: null });
       const summary = await summarize({ data: { steps: data.steps } });
       if (mounted.current) { setResult(summary); setError(summary.error); }
     } catch (error) {
