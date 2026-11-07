@@ -6,7 +6,7 @@ const config: CapacitorConfig = {
   appName: 'GameRun',
   webDir: 'public',
   server: {
-    url: 'https://id-preview--d5122d93-14c9-4dff-8210-2e016359d91b.lovable.app',
+    url: 'https://second-life-project-archive.lovable.app',
     cleartext: false,
   },
 };
