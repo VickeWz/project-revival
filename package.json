@@ -13,7 +13,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build:native": "vite build --config vite.native.config.ts",
-    "ios": "npm run build:native && cap sync ios"
+    "ios": "npm run build:native && cap sync ios && node scripts/configure-ios.mjs"
   },
   "overrides": {
     "rolldown": "1.2.1"
@@ -23,6 +23,7 @@
     "@capacitor/core": "^8",
     "@capacitor/ios": "^8.0.1",
     "@capgo/capacitor-health": "8.11.14",
+    "@gamerun/capacitor-motion": "file:./plugins/gamerun-motion",
     "@hookform/resolvers": "^5.2.2",
     "@lovable.dev/ai-gateway": "^0.1.11",
     "@radix-ui/react-accordion": "^1.2.12",
