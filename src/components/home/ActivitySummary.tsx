@@ -8,7 +8,7 @@ import { summarizeActivity } from '@/lib/activity-summary.functions';
 export function ActivitySummary({ onSync }: { onSync: (data: HealthData) => void }) {
   const summarize = useServerFn(summarizeActivity);
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<Awaited<ReturnType<typeof summarizeActivity>> | null>(null);
+  const [result, setResult] = useState<{ steps: number; minutes: number; stepsToNextReward: number; summary: string | null; error: string | null } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const pending = useRef(false);
   const mounted = useRef(true);
