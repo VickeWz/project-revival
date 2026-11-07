@@ -1,0 +1,3 @@
+- [ ] Uppdatera Hälsa-data löpande på startsidan och under pass.
+- [ ] Beräkna och spara passets skärmtid från steg, inte sträcka.
+- [ ] Testa synkning och omräkning; ange vad som kräver en riktig iPhone.
