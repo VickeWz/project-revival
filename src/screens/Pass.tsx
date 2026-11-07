@@ -16,6 +16,7 @@ import { format } from "date-fns";
 import logo from "@/assets/logo.png";
 
 interface PassSession {
+  id: string;
   startTime: Date;
 }
 
@@ -129,6 +130,7 @@ export default function Pass() {
     }
 
     setSession({
+      id: crypto.randomUUID(),
       startTime: new Date(),
     });
     endTimeRef.current = null;
@@ -157,64 +159,17 @@ export default function Pass() {
       const finalDistance = finalData.distance;
       const finalEarnedMinutes = healthKitService.calculateScreenTimeEarned(finalData);
       const today = format(session.startTime, "yyyy-MM-dd");
-      // Check if there's already an activity log for today
-      const { data: existingLog } = await supabase
-        .from("activity_logs")
-        .select("*")
-        .eq("user_id", profile.id)
-        .eq("logged_at", today)
-        .maybeSingle();
-
-      if (existingLog) {
-        // Update existing log by adding to it
-        const { error: updateError } = await supabase
-          .from("activity_logs")
-          .update({
-            steps: existingLog.steps + finalData.steps,
-            distance_meters: existingLog.distance_meters + finalDistance,
-            active_minutes: existingLog.active_minutes + finalData.activeMinutes,
-            screen_time_earned: existingLog.screen_time_earned + finalEarnedMinutes,
-          })
-          .eq("id", existingLog.id);
-
-        if (updateError) throw updateError;
-      } else {
-        // Insert new log for today
-        const { error: logError } = await supabase.from("activity_logs").insert({
-          user_id: profile.id,
-          steps: finalData.steps,
-          distance_meters: finalDistance,
-          active_minutes: finalData.activeMinutes,
-          screen_time_earned: finalEarnedMinutes,
-          logged_at: today,
-        });
-
-        if (logError) throw logError;
-      }
-
-      // Update screen time balance
-      const { data: balanceData } = await supabase
-        .from("screen_time_balance")
-        .select("*")
-        .eq("user_id", profile.id)
-        .maybeSingle();
-
-      const newBalance = (balanceData?.minutes_remaining || 0) + finalEarnedMinutes;
-
-      if (balanceData) {
-        await supabase
-          .from("screen_time_balance")
-          .update({
-            minutes_remaining: newBalance,
-            last_updated: new Date().toISOString(),
-          })
-          .eq("user_id", profile.id);
-      } else {
-        await supabase.from("screen_time_balance").insert({
-          user_id: profile.id,
-          minutes_remaining: finalEarnedMinutes,
-        });
-      }
+      const { data: result, error: saveError } = await supabase.rpc("complete_step_pass", {
+        p_id: session.id,
+        p_started_at: session.startTime.toISOString(),
+        p_ended_at: endTimeRef.current.toISOString(),
+        p_day: today,
+        p_steps: finalData.steps,
+        p_distance: finalDistance,
+        p_active_minutes: finalData.activeMinutes,
+      });
+      if (saveError) throw saveError;
+      const newBalance = result.balance;
 
       setScreenTimeBalance(newBalance);
       toast.success(`Pass complete! Earned ${finalEarnedMinutes} minutes`, {

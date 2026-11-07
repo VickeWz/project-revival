@@ -5,6 +5,8 @@ import Pass from "@/screens/Pass";
 export const Route = createFileRoute("/pass")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Pass — GameRun" },
       { name: "description", content: "GameRun: pass — earn screen time by staying active." },
       { property: "og:title", content: "Pass — GameRun" },

@@ -5,6 +5,8 @@ import Stats from "@/screens/Stats";
 export const Route = createFileRoute("/stats")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Stats — GameRun" },
       { name: "description", content: "GameRun: stats — earn screen time by staying active." },
       { property: "og:title", content: "Stats — GameRun" },
