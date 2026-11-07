@@ -1,0 +1,11 @@
+{
+  "name": "@gamerun/capacitor-screen-time",
+  "version": "1.0.0",
+  "description": "GameRun native iOS Screen Time controls",
+  "license": "MIT",
+  "type": "module",
+  "main": "index.js",
+  "files": ["index.js", "Package.swift", "GamerunCapacitorScreenTime.podspec", "ios"],
+  "peerDependencies": { "@capacitor/core": ">=8.0.0" },
+  "capacitor": { "ios": { "src": "ios" } }
+}
