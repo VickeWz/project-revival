@@ -132,6 +132,20 @@ class HealthKitService {
     }
   }
 
+  // Live progress during a pass: today's totals now minus today's totals at start.
+  // Uses the same query as the dashboard, so it works wherever the dashboard works.
+  async getPassProgress(startDate: Date, baseline: { steps: number; distance: number }): Promise<{ steps: number; distance: number }> {
+    if (!this.isNative) {
+      const elapsed = (Date.now() - startDate.getTime()) / 1000;
+      return { steps: Math.floor(elapsed * 1.8), distance: Math.floor(elapsed * 1.4) };
+    }
+    const now = await this.getTodayData();
+    return {
+      steps: Math.max(0, now.steps - baseline.steps),
+      distance: Math.max(0, now.distance - baseline.distance),
+    };
+  }
+
   async getDistanceSince(startDate: Date): Promise<number> {
     if (!this.isNative) {
       // Return mock data for web preview - simulate walking
