@@ -20,8 +20,17 @@ export const linkChild = createServerFn({ method: "POST" })
       .maybeSingle();
     if (!parentProfile || parentProfile.role !== "parent") return { error: "Only parents can add children" };
 
-    const check = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_PUBLISHABLE_KEY!, {
+    const key = process.env.SUPABASE_PUBLISHABLE_KEY!;
+    const check = createClient(process.env.SUPABASE_URL!, key, {
       auth: { persistSession: false, autoRefreshToken: false },
+      global: {
+        fetch: (input, init) => {
+          const headers = new Headers(init?.headers);
+          if (headers.get("Authorization") === `Bearer ${key}`) headers.delete("Authorization");
+          headers.set("apikey", key);
+          return fetch(input, { ...init, headers });
+        },
+      },
     });
     const { data: childAuth, error: childAuthError } = await check.auth.signInWithPassword({
       email: data.childEmail,
