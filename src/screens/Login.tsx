@@ -44,24 +44,21 @@ export default function Login() {
     try {
       if (authMode === 'signin') {
         const { error } = await signIn(email, password);
-        setIsLoading(false);
         if (error) {
           toast.error(error.message);
+          setIsLoading(false);
         } else {
           toast.success('Welcome back to GameRun!');
           // Redirect handled by AuthRedirect in App.tsx
         }
       } else {
-        const { error, needsConfirmation } = await signUp(email, password, displayName, userType!);
-        setIsLoading(false);
+        const { error } = await signUp(email, password, displayName, userType!);
         if (error) {
           toast.error(error.message);
-        } else if (needsConfirmation) {
-          toast.success('Account created! Check your email to confirm it, then sign in.');
-          setAuthMode('signin');
-          setShowForm(true);
+          setIsLoading(false);
         } else {
-          toast.success('Account created! Welcome to GameRun!');
+          toast.success('Account created! Check your email to confirm it, then sign in.');
+          // Redirect handled by AuthRedirect in App.tsx
         }
       }
     } catch {

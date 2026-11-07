@@ -1,7 +1,6 @@
 // @ts-nocheck -- imported code written for a looser TypeScript config
 // HealthKit Service for iOS native integration
 // Uses the Capacitor 8-compatible Health plugin for real device data
-import { screenTimeFromSteps } from '@/lib/screen-time';
 import { Capacitor } from '@capacitor/core';
 import { Health, type HealthDataType } from '@capgo/capacitor-health';
 
@@ -132,20 +131,6 @@ class HealthKitService {
     }
   }
 
-  // Live progress during a pass: today's totals now minus today's totals at start.
-  // Uses the same query as the dashboard, so it works wherever the dashboard works.
-  async getPassProgress(startDate: Date, baseline: { steps: number; distance: number }): Promise<{ steps: number; distance: number }> {
-    if (!this.isNative) {
-      // No real step data outside the native iPhone app — never fake steps
-      return { steps: 0, distance: 0 };
-    }
-    const now = await this.getTodayData();
-    return {
-      steps: Math.max(0, now.steps - baseline.steps),
-      distance: Math.max(0, now.distance - baseline.distance),
-    };
-  }
-
   async getDistanceSince(startDate: Date): Promise<number> {
     if (!this.isNative) {
       // Return mock data for web preview - simulate walking
@@ -197,9 +182,17 @@ class HealthKitService {
 
   // Calculate screen time earned based on activity
   calculateScreenTimeEarned(data: HealthData): number {
-    return screenTimeFromSteps(data.steps);
+    // 1 minute of screen time per 100 steps
+    const stepsMinutes = Math.floor(data.steps / 100);
+    
+    // 2 minutes of screen time per active minute
+    const activeMinutes = data.activeMinutes * 2;
+    
+    // 1 minute per 500 meters walked
+    const distanceMinutes = Math.floor(data.distance / 500);
+    
+    return stepsMinutes + activeMinutes + distanceMinutes;
   }
-
 
   isAvailable(): boolean {
     return this.isNative;

@@ -1,5 +1,4 @@
 // @ts-nocheck -- imported code written for a looser TypeScript config
-import { screenTimeFromSteps, stepsToNextReward, STEPS_PER_REWARD } from "@/lib/screen-time";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -19,7 +18,6 @@ import logo from "@/assets/logo.png";
 interface PassSession {
   startTime: Date;
   startDistance: number;
-  startSteps: number;
 }
 
 interface ActivityLog {
@@ -34,7 +32,7 @@ export default function Pass() {
   const [view, setView] = useState<"home" | "active" | "screentime">("home");
   const [isActive, setIsActive] = useState(false);
   const [session, setSession] = useState<PassSession | null>(null);
-  const [progress, setProgress] = useState({ steps: 0, distance: 0 });
+  const [currentDistance, setCurrentDistance] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [saving, setSaving] = useState(false);
@@ -47,10 +45,9 @@ export default function Pass() {
   const { profile } = useAuth();
   const navigate = useNavigate();
 
-  // Earned screen time follows the GameRun rule: every 1000 steps = 5 minutes
-  const distanceTraveled = session ? progress.distance : 0;
-  const passSteps = session ? progress.steps : 0;
-  const earnedMinutes = screenTimeFromSteps(passSteps);
+  // Calculate earned screen time: 100m = 1 minute
+  const distanceTraveled = session ? currentDistance - session.startDistance : 0;
+  const earnedMinutes = Math.floor(distanceTraveled / 100);
 
   // Fetch screen time balance and history
   useEffect(() => {
@@ -108,18 +105,11 @@ export default function Pass() {
   useEffect(() => {
     if (isActive && session) {
       const updateDistance = async () => {
-        try {
-          const p = await healthKitService.getPassProgress(session.startTime, {
-            steps: session.startSteps,
-            distance: session.startDistance,
-          });
-          setProgress(p);
-        } catch (e) {
-          console.error("Pass tracking error:", e);
-        }
+        const distance = await healthKitService.getDistanceSince(session.startTime);
+        setCurrentDistance(session.startDistance + distance);
       };
       updateDistance();
-      distanceRef.current = setInterval(updateDistance, 1000);
+      distanceRef.current = setInterval(updateDistance, 3000);
     }
     return () => {
       if (distanceRef.current) clearInterval(distanceRef.current);
@@ -144,9 +134,8 @@ export default function Pass() {
     setSession({
       startTime: new Date(),
       startDistance: data.distance,
-      startSteps: data.steps,
     });
-    setProgress({ steps: 0, distance: 0 });
+    setCurrentDistance(data.distance);
     setElapsedSeconds(0);
     setIsActive(true);
     toast.success("Pass started! Get moving!");
@@ -159,8 +148,7 @@ export default function Pass() {
     setSaving(true);
 
     const finalDistance = distanceTraveled;
-    const finalSteps = passSteps;
-    const finalEarnedMinutes = screenTimeFromSteps(finalSteps);
+    const finalEarnedMinutes = Math.floor(finalDistance / 100);
     const today = new Date().toISOString().split("T")[0];
 
     try {
@@ -177,7 +165,6 @@ export default function Pass() {
         const { error: updateError } = await supabase
           .from("activity_logs")
           .update({
-            steps: (existingLog.steps || 0) + finalSteps,
             distance_meters: existingLog.distance_meters + finalDistance,
             active_minutes: existingLog.active_minutes + Math.floor(elapsedSeconds / 60),
             screen_time_earned: existingLog.screen_time_earned + finalEarnedMinutes,
@@ -189,7 +176,7 @@ export default function Pass() {
         // Insert new log for today
         const { error: logError } = await supabase.from("activity_logs").insert({
           user_id: profile.id,
-          steps: finalSteps,
+          steps: 0,
           distance_meters: finalDistance,
           active_minutes: Math.floor(elapsedSeconds / 60),
           screen_time_earned: finalEarnedMinutes,
@@ -245,7 +232,7 @@ export default function Pass() {
     } finally {
       setSaving(false);
     }
-  }, [session, profile, distanceTraveled, passSteps, elapsedSeconds]);
+  }, [session, profile, distanceTraveled, elapsedSeconds]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -296,42 +283,36 @@ export default function Pass() {
             <p className="text-muted-foreground">{isActive ? "Pass Active" : "Ready to start"}</p>
           </motion.div>
 
-          <div className="grid grid-cols-3 gap-3 mb-8">
+          <div className="grid grid-cols-2 gap-4 mb-8">
             <Card className="border-border/50">
-              <CardContent className="p-3 text-center">
-                <p className="font-display font-bold text-xl text-foreground">
-                  {stepsToNextReward(passSteps).toLocaleString()}
-                </p>
-                <p className="text-xs text-muted-foreground">steps to +5 min</p>
-                <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-2">
-                  <motion.div className="h-full bg-primary" animate={{ width: `${((passSteps % STEPS_PER_REWARD) / STEPS_PER_REWARD) * 100}%` }} />
-                </div>
-              </CardContent>
-            </Card>
-            <Card className="border-border/50">
-              <CardContent className="p-3 text-center">
-                <MapPin className="w-5 h-5 mx-auto mb-1 text-primary" />
-                <p className="font-display font-bold text-xl text-foreground">
+              <CardContent className="p-4 text-center">
+                <MapPin className="w-6 h-6 mx-auto mb-2 text-primary" />
+                <p className="font-display font-bold text-2xl text-foreground">
                   {(distanceTraveled / 1000).toFixed(2)}
                 </p>
-                <p className="text-xs text-muted-foreground">km</p>
+                <p className="text-xs text-muted-foreground">km traveled</p>
               </CardContent>
             </Card>
             <Card className="border-border/50">
-              <CardContent className="p-3 text-center">
-                <p className="font-display font-bold text-xl text-foreground">{formatTime(elapsedSeconds)}</p>
-                <p className="text-xs text-muted-foreground">time</p>
+              <CardContent className="p-4 text-center">
+                <Tv className="w-6 h-6 mx-auto mb-2 text-secondary" />
+                <p className="font-display font-bold text-2xl text-foreground">{earnedMinutes}</p>
+                <p className="text-xs text-muted-foreground">min earned</p>
               </CardContent>
             </Card>
           </div>
 
           <Card className="mb-8 border-border/50">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Tv className="w-6 h-6 text-secondary" />
-                <span className="text-sm text-muted-foreground">Screen time earned</span>
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-muted-foreground">Next minute at</span>
+                <span className="font-display font-bold text-foreground">
+                  {((earnedMinutes + 1) * 100 - distanceTraveled).toFixed(0)}m
+                </span>
               </div>
-              <span className="font-display font-bold text-2xl text-foreground">{earnedMinutes} min</span>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <motion.div className="h-full bg-primary" animate={{ width: `${distanceTraveled % 100}%` }} />
+              </div>
             </CardContent>
           </Card>
 
@@ -359,7 +340,7 @@ export default function Pass() {
           </motion.div>
 
           <div className="mt-8 text-center text-sm text-muted-foreground">
-            <p className="mb-1">1,000 steps = 5 minutes screen time</p>
+            <p className="mb-1">100 meters = 1 minute screen time</p>
             <p>Walk or run to earn more!</p>
           </div>
         </main>
@@ -538,7 +519,7 @@ export default function Pass() {
                 <h3 className="font-display font-semibold text-foreground">How It Works</h3>
               </div>
               <div className="space-y-2 text-sm text-muted-foreground">
-                <p>• <span className="text-foreground font-medium">1,000 steps = 5 minutes</span> of screen time</p>
+                <p>• <span className="text-foreground font-medium">5,000 steps = 1 hour</span> of screen time</p>
                 <p>• A pass tracks your activity until you end it</p>
                 <p>• Walk, run, or explore to earn more time</p>
                 <p>• Use your balance anytime in Screentime</p>

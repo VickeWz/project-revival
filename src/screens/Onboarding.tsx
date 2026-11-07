@@ -67,7 +67,7 @@ const childSteps: OnboardingStep[] = [
 ];
 
 export default function Onboarding() {
-  const { profile, refreshProfile } = useAuth();
+  const { profile } = useAuth();
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState(0);
   const [isCompleting, setIsCompleting] = useState(false);
@@ -95,7 +95,6 @@ export default function Onboarding() {
 
       if (error) throw error;
       
-      await refreshProfile();
       toast.success("You're all set! Let's get moving!");
       navigate(profile.role === 'parent' ? '/parent' : '/child');
     } catch (error) {

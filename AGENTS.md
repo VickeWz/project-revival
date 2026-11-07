@@ -31,4 +31,3 @@ use the editor.
 
 - Imported GameRun screens live in `src/screens` and keep react-router-style calls via `src/lib/router-compat.tsx`; route files in `src/routes` only wrap them with guards from `src/components/RouteGuards.tsx`. Why: minimal-diff port of the original app.
 - Profiles (and child screen-time balances) are created by the `handle_new_user` trigger from signup metadata, not by the client. Why: email confirmation means no session exists right after signup.
-- iOS shell is Capacitor (capacitor.config.ts) loading the hosted web app via server.url; HealthKit via @capgo/capacitor-health queryAggregated sum. Why: TanStack Start is SSR, no static bundle for webDir.
