@@ -184,7 +184,7 @@ export default function Login() {
             </motion.button>
 
             <p className="text-center text-sm text-muted-foreground mt-6">
-              Already have an account?{' '}
+              Har du redan ett konto?{' '}
               <button 
                 onClick={handleSwitchToSignIn}
                 className="text-primary hover:underline font-medium"
@@ -251,7 +251,7 @@ export default function Login() {
             </form>
 
             <p className="text-center text-sm text-muted-foreground mt-6">
-              Don't have an account?{' '}
+              Har du inget konto?{' '}
               <button 
                 onClick={handleSwitchToSignUp}
                 className="text-primary hover:underline font-medium"
@@ -325,7 +325,7 @@ export default function Login() {
             </form>
 
             <p className="text-center text-sm text-muted-foreground mt-6">
-              Already have an account?{' '}
+              Har du redan ett konto?{' '}
               <button 
                 onClick={handleSwitchToSignIn}
                 className="text-primary hover:underline font-medium"
