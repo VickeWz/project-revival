@@ -173,7 +173,7 @@ export default function AlwaysAllowed() {
           >
             <BookOpen className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
             <h3 className="font-display font-bold text-lg text-foreground mb-2">Inga appar tillagda</h3>
-            <p className="text-muted-foreground mb-6">Add apps that are always available, even during downtime</p>
+            <p className="text-muted-foreground mb-6">Spara vilka appar som ska vara tillåtna</p>
             <Button onClick={() => setShowAddDialog(true)}>
               <Plus className="w-4 h-4 mr-2" />
               Lägg till app
@@ -196,7 +196,7 @@ export default function AlwaysAllowed() {
                   </div>
                   <div className="flex-1">
                     <p className="font-medium text-foreground">{app.app_name}</p>
-                    <p className="text-xs text-muted-foreground">{app.category}</p>
+                    <p className="text-xs text-muted-foreground">{({"Games": "Spel", "Entertainment": "Underhållning", "Social": "Socialt", "Productivity": "Produktivitet", "Communication": "Kommunikation", "Utilities": "Verktyg", "Health": "Hälsa", "Education": "Utbildning"} as Record<string, string>)[app.category] ?? app.category}</p>
                   </div>
                   <Button
                     variant="ghost"
@@ -219,10 +219,7 @@ export default function AlwaysAllowed() {
           transition={{ delay: 0.3 }}
           className="bg-muted/30 rounded-2xl p-4 mt-6"
         >
-          <p className="text-sm text-muted-foreground">
-            Apps in this list will always be available to your child, even during downtime 
-            or when screen time runs out. Use this for essential apps like Phone and Messages.
-          </p>
+          <p className="text-sm text-muted-foreground">Dina val sparas på kontot. Blockering av andra appar på iPhone är inte ansluten ännu.</p>
         </motion.div>
       </main>
 
@@ -245,7 +242,7 @@ export default function AlwaysAllowed() {
                   </div>
                   <div>
                     <p className="font-medium text-foreground">{app.name}</p>
-                    <p className="text-xs text-muted-foreground">{app.category}</p>
+                    <p className="text-xs text-muted-foreground">{({"Games": "Spel", "Entertainment": "Underhållning", "Social": "Socialt", "Productivity": "Produktivitet", "Communication": "Kommunikation", "Utilities": "Verktyg", "Health": "Hälsa", "Education": "Utbildning"} as Record<string, string>)[app.category] ?? app.category}</p>
                   </div>
                 </button>
               ))}

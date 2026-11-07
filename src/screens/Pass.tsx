@@ -517,10 +517,10 @@ export default function Pass() {
                   {passHistory.slice(0, 5).map((log) => (
                     <div key={log.id} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
                       <div>
-                        <p className="text-sm text-muted-foreground">{format(new Date(log.logged_at), "MMM d")}</p>
+                        <p className="text-sm text-muted-foreground">{new Date(log.logged_at).toLocaleDateString("sv-SE", { day: "numeric", month: "short" })}</p>
                       </div>
                       <p className="font-display font-bold text-foreground">
-                        -{log.screen_time_earned}m
+                        +{log.screen_time_earned} min
                       </p>
                     </div>
                   ))}

@@ -61,7 +61,7 @@ export const ChildCard = ({
           <div>
             <h3 className="font-display font-bold text-lg text-foreground">{name}</h3>
             <span className={`text-sm font-medium ${isLocked ? 'text-destructive' : 'text-primary'}`}>
-              {isLocked ? 'Phone Locked' : 'Phone Active'}
+              {isLocked ? 'Ingen skärmtid kvar' : 'Skärmtid tillgänglig'}
             </span>
           </div>
         </div>
@@ -73,9 +73,9 @@ export const ChildCard = ({
           </AlertDialogTrigger>
           <AlertDialogContent>
             <AlertDialogHeader>
-              <AlertDialogTitle>Remove {name}?</AlertDialogTitle>
+              <AlertDialogTitle>Koppla bort {name}?</AlertDialogTitle>
               <AlertDialogDescription>
-                This will unlink {name} from your account. You can always add them back later.
+                Detta kopplar bort {name} från ditt konto. Du kan koppla kontot igen senare.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -99,7 +99,7 @@ export const ChildCard = ({
         <div className="bg-muted rounded-xl p-4">
           <div className="flex items-center gap-2 mb-2 text-muted-foreground">
             <Activity className="w-4 h-4" />
-            <span className="text-xs">Aktivitet</span>
+            <span className="text-xs">Sparad distans / 5 km</span>
           </div>
           <span className="font-display font-bold text-xl text-foreground">{activityProgress}%</span>
         </div>
@@ -107,7 +107,7 @@ export const ChildCard = ({
 
       <Button variant="reward" className="w-full" onClick={onGrantTime}>
         <Gift className="w-4 h-4" />
-        Ge skärmtid
+        Ge 15 minuter
       </Button>
     </motion.div>
   );

@@ -26,7 +26,7 @@ export default function ResetPassword() {
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
     if (error) {
-      toast.error(error.message);
+      toast.error("Kunde inte slutföra begäran. Kontrollera uppgifterna och försök igen.");
       return;
     }
     toast.success("Lösenordet är uppdaterat!");

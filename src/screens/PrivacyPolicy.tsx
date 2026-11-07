@@ -107,7 +107,7 @@ export default function PrivacyPolicy() {
                 <h3 className="font-display font-semibold text-foreground">{section.title}</h3>
               </div>
               <ul className="space-y-2">
-                {section.content.map((item, i) => (
+                {section.content.filter(Boolean).map((item, i) => (
                   <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
                     <span className="text-primary mt-1">•</span>
                     {item}
@@ -118,29 +118,6 @@ export default function PrivacyPolicy() {
           ))}
         </div>
 
-        {/* Contact */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="mt-8 bg-muted/30 rounded-2xl p-5 text-center"
-        >
-          <Mail className="w-6 h-6 mx-auto mb-2 text-primary" />
-          <p className="text-sm text-muted-foreground mb-1">Questions about your privacy?</p>
-          <a href="mailto:privacy@gamerun.app" className="text-primary font-medium text-sm">
-            privacy@gamerun.app
-          </a>
-        </motion.div>
-
-        {/* Last Updated */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
-          className="text-center text-xs text-muted-foreground mt-8"
-        >
-          
-        </motion.p>
       </main>
     </div>
   );

@@ -50,11 +50,11 @@ export default function AddChild() {
       const response = { data: result as { error?: string; message?: string; childName?: string } };
 
       if (response.data?.error) {
-        setError(response.data.error);
+        setError("Kunde inte koppla kontot. Kontrollera barnets uppgifter.");
         return;
       }
 
-      toast.success(response.data?.message || "Barnets konto är kopplat!", {
+      toast.success("Barnets konto är kopplat!", {
         description: `${response.data?.childName || "Barnet"} har kopplats till ditt konto.`,
       });
 

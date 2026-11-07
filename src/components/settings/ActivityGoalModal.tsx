@@ -23,7 +23,7 @@ export function ActivityGoalModal({ open, onOpenChange, currentGoal, onSave }: A
 
   const handleSave = () => {
     onSave(goal);
-    toast.success("Activity goal updated!", {
+    toast.success("Stegmålet är uppdaterat!", {
       description: `Ditt dagliga stegmål är nu ${goal.toLocaleString("sv-SE")} steg.`,
     });
     onOpenChange(false);
@@ -85,15 +85,10 @@ export function ActivityGoalModal({ open, onOpenChange, currentGoal, onSave }: A
                     : "bg-muted text-muted-foreground hover:bg-muted/80"
                 }`}
               >
-                {(preset / 1000).toFixed(preset % 1000 === 0 ? 0 : 1)}k
+                {preset.toLocaleString("sv-SE")}
               </motion.button>
             ))}
           </div>
-
-          {/* Distance estimate */}
-          <p className="text-center text-xs text-muted-foreground mb-6">
-            ≈ {((goal / 1300) * 1).toFixed(1)} km per day
-          </p>
 
           <Button onClick={handleSave} className="w-full gradient-activity">
             Spara mål

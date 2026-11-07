@@ -228,7 +228,7 @@ export default function AppLimits() {
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-foreground">{limit.app_name}</p>
-                      <p className="text-xs text-muted-foreground">{limit.category}</p>
+                      <p className="text-xs text-muted-foreground">{({"Games": "Spel", "Entertainment": "Underhållning", "Social": "Socialt", "Productivity": "Produktivitet", "Communication": "Kommunikation", "Utilities": "Verktyg", "Health": "Hälsa", "Education": "Utbildning"} as Record<string, string>)[limit.category] ?? limit.category}</p>
                     </div>
                     <Button
                       variant="ghost"
@@ -273,10 +273,7 @@ export default function AppLimits() {
           transition={{ delay: 0.3 }}
           className="bg-muted/30 rounded-2xl p-4 mt-6"
         >
-          <p className="text-sm text-muted-foreground">
-            When the daily limit is reached, the app will be blocked until the next day. 
-            Activity earned screen time does not affect these limits.
-          </p>
+          <p className="text-sm text-muted-foreground">Dina val sparas på kontot. Blockering av andra appar på iPhone är inte ansluten ännu.</p>
         </motion.div>
       </main>
 
@@ -299,7 +296,7 @@ export default function AppLimits() {
                   </div>
                   <div>
                     <p className="font-medium text-foreground">{app.name}</p>
-                    <p className="text-xs text-muted-foreground">{app.category}</p>
+                    <p className="text-xs text-muted-foreground">{({"Games": "Spel", "Entertainment": "Underhållning", "Social": "Socialt", "Productivity": "Produktivitet", "Communication": "Kommunikation", "Utilities": "Verktyg", "Health": "Hälsa", "Education": "Utbildning"} as Record<string, string>)[app.category] ?? app.category}</p>
                   </div>
                 </button>
               ))}

@@ -46,7 +46,7 @@ export default function Login() {
       if (authMode === 'signin') {
         const { error } = await signIn(email, password);
         if (error) {
-          toast.error(error.message);
+          toast.error("Kunde inte slutföra begäran. Kontrollera uppgifterna och försök igen.");
           setIsLoading(false);
         } else {
           setIsLoading(false);
@@ -54,10 +54,10 @@ export default function Login() {
           // Redirect handled by AuthRedirect in App.tsx
         }
       } else {
-        const { error, needsConfirmation } = await signUp(email, password, displayName, userType!);
+        const { error, needsConfirmation } = await signUp(email, password, displayName, userType ?? "child");
         setIsLoading(false);
         if (error) {
-          toast.error(error.message);
+          toast.error("Kunde inte slutföra begäran. Kontrollera uppgifterna och försök igen.");
         } else if (needsConfirmation) {
           toast.success('Kontot är skapat! Bekräfta via e-post och logga sedan in.');
           setAuthMode('signin');
@@ -81,7 +81,7 @@ export default function Login() {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${origin}/reset-password`,
     });
-    if (error) toast.error(error.message);
+    if (error) toast.error("Kunde inte slutföra begäran. Kontrollera uppgifterna och försök igen.");
     else toast.success('Kontrollera din e-post för en länk för att återställa lösenordet.');
   };
 

@@ -192,7 +192,7 @@ export default function Downtime() {
               <div className="flex flex-wrap gap-2">
                 {DAYS.map((day) => (
                   <button
-                    key={day}
+                    key={({ Sun: "Sön", Mon: "Mån", Tue: "Tis", Wed: "Ons", Thu: "Tor", Fri: "Fre", Sat: "Lör" } as Record<string, string>)[day]}
                     onClick={() => toggleDay(day)}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                       selectedDays.includes(day)
@@ -200,7 +200,7 @@ export default function Downtime() {
                         : "bg-muted text-muted-foreground"
                     }`}
                   >
-                    {day}
+                    {({ Sun: "Sön", Mon: "Mån", Tue: "Tis", Wed: "Ons", Thu: "Tor", Fri: "Fre", Sat: "Lör" } as Record<string, string>)[day]}
                   </button>
                 ))}
               </div>
@@ -215,10 +215,7 @@ export default function Downtime() {
           transition={{ delay: 0.3 }}
           className="bg-muted/30 rounded-2xl p-4"
         >
-          <p className="text-sm text-muted-foreground">
-            During downtime, only apps in "Alltid tillåtna" and phone calls will be available. 
-            This helps establish healthy screen time boundaries.
-          </p>
+          <p className="text-sm text-muted-foreground">Dina val sparas på kontot. Blockering av andra appar på iPhone är inte ansluten ännu.</p>
         </motion.div>
       </main>
     </div>

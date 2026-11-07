@@ -53,8 +53,17 @@ export default function ParentDashboard() {
 
   useEffect(() => {
     if (profile?.id) {
-      fetchLinkedChildren();
-      fetchPendingRequests();
+      let pending = false;
+      const refresh = async () => {
+        if (pending || document.visibilityState === "hidden") return;
+        pending = true;
+        try { await Promise.all([fetchLinkedChildren(), fetchPendingRequests()]); }
+        finally { pending = false; }
+      };
+      void refresh();
+      const interval = setInterval(() => void refresh(), 3000);
+      window.addEventListener("focus", refresh);
+      return () => { clearInterval(interval); window.removeEventListener("focus", refresh); };
     }
   }, [profile?.id]);
 
@@ -159,7 +168,7 @@ export default function ParentDashboard() {
         return {
           id: req.id,
           childId: req.child_id,
-          childName: child?.display_name || "Unknown",
+          childName: child?.display_name || "Barn",
           requestedMinutes: req.requested_minutes,
           createdAt: req.created_at,
         };
@@ -299,13 +308,6 @@ export default function ParentDashboard() {
     navigate('/');
   };
 
-  const stats = [
-    { label: "Antal barn", value: children.length.toString(), icon: Users, color: "gradient-activity" },
-    { label: "Genomsnittlig aktivitet", value: children.length > 0 ? `${Math.round(children.reduce((a, c) => a + c.activityProgress, 0) / children.length)}%` : "0%", icon: Activity, color: "gradient-reward" },
-    { label: "Tid kvar totalt", value: `${children.reduce((a, c) => a + c.screenTimeRemaining, 0)}m`, icon: Clock, color: "gradient-hero" },
-    { label: "Barn med tid kvar", value: children.filter(c => !c.isLocked).length.toString(), icon: TrendingUp, color: "gradient-activity" },
-  ];
-
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -321,7 +323,7 @@ export default function ParentDashboard() {
           </div>
           <div className="flex items-center gap-2">
             <div className="relative">
-              <Button variant="ghost" size="icon">
+              <Button variant="ghost" size="icon" aria-label="Visa förfrågningar" onClick={() => { setActiveTab("home"); setTimeout(() => document.getElementById("time-requests")?.scrollIntoView({ behavior: "smooth" }), 0); }}>
                 <Bell className="w-5 h-5" />
               </Button>
               {requests.length > 0 && (
@@ -346,27 +348,6 @@ export default function ParentDashboard() {
 
         {activeTab === "home" ? (
           <>
-            {/* Stats Grid */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8"
-        >
-          {stats.map((stat, index) => (
-            <motion.div
-              key={stat.label}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: index * 0.1 }}
-              className={`${stat.color} rounded-2xl p-5 text-primary-foreground`}
-            >
-              <stat.icon className="w-6 h-6 mb-3 opacity-80" />
-              <p className="text-2xl font-display font-bold">{stat.value}</p>
-              <p className="text-sm opacity-80">{stat.label}</p>
-            </motion.div>
-          ))}
-        </motion.div>
-
         {/* Children Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
@@ -411,7 +392,6 @@ export default function ParentDashboard() {
                     activityProgress={child.activityProgress}
                     isLocked={child.isLocked}
                     onGrantTime={() => handleGrantTime(child.id, child.name)}
-                    onViewDetails={() => toast.info(`Viewing ${child.name}'s details`)}
                     onRemove={() => handleRemoveChild(child.id, child.name)}
                   />
                 </motion.div>
@@ -420,36 +400,8 @@ export default function ParentDashboard() {
           )}
         </div>
 
-        {/* Quick Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="bg-card rounded-2xl p-6 shadow-card border border-border/50 mb-8"
-        >
-          <h3 className="font-display font-bold text-lg text-foreground mb-4">Genvägar</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <Button variant="outline" className="h-auto py-4 flex-col gap-2">
-              <Clock className="w-5 h-5" />
-              <span className="text-xs">Lock All</span>
-            </Button>
-            <Button variant="outline" className="h-auto py-4 flex-col gap-2">
-              <Activity className="w-5 h-5" />
-              <span className="text-xs">View Activity</span>
-            </Button>
-            <Button variant="outline" className="h-auto py-4 flex-col gap-2">
-              <Bell className="w-5 h-5" />
-              <span className="text-xs">Notifications</span>
-            </Button>
-            <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate('/settings')}>
-              <Settings className="w-5 h-5" />
-              <span className="text-xs">Inställningar</span>
-            </Button>
-          </div>
-        </motion.div>
-
         {/* Pending Screen Time Requests */}
-        <motion.div
+        <motion.div id="time-requests"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.7 }}
