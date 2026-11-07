@@ -1,7 +1,7 @@
 import { supabase } from "@/integrations/supabase/client";
 
 // In the bundled iPhone app the screens run from local files, so server work goes to the published backend.
-export const API_ORIGIN = import.meta.env.VITE_NATIVE_API_ORIGIN || "https://second-life-project-archive.lovable.app";
+export const API_ORIGIN = import.meta.env['VITE_NATIVE_API_ORIGIN'] || "https://second-life-project-archive.lovable.app";
 
 export async function callNativeApi<T>(path: string, body: unknown): Promise<T> {
   const { data } = await supabase.auth.getSession();
