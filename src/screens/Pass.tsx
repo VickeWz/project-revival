@@ -119,7 +119,7 @@ export default function Pass() {
         }
       };
       updateDistance();
-      distanceRef.current = setInterval(updateDistance, 3000);
+      distanceRef.current = setInterval(updateDistance, 1000);
     }
     return () => {
       if (distanceRef.current) clearInterval(distanceRef.current);
@@ -296,36 +296,42 @@ export default function Pass() {
             <p className="text-muted-foreground">{isActive ? "Pass Active" : "Ready to start"}</p>
           </motion.div>
 
-          <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="grid grid-cols-3 gap-3 mb-8">
             <Card className="border-border/50">
-              <CardContent className="p-4 text-center">
-                <MapPin className="w-6 h-6 mx-auto mb-2 text-primary" />
-                <p className="font-display font-bold text-2xl text-foreground">
-                  {(distanceTraveled / 1000).toFixed(2)}
+              <CardContent className="p-3 text-center">
+                <p className="font-display font-bold text-xl text-foreground">
+                  {stepsToNextReward(passSteps).toLocaleString()}
                 </p>
-                <p className="text-xs text-muted-foreground">km traveled · {passSteps.toLocaleString()} steps</p>
+                <p className="text-xs text-muted-foreground">steps to +5 min</p>
+                <div className="h-1.5 bg-muted rounded-full overflow-hidden mt-2">
+                  <motion.div className="h-full bg-primary" animate={{ width: `${((passSteps % STEPS_PER_REWARD) / STEPS_PER_REWARD) * 100}%` }} />
+                </div>
               </CardContent>
             </Card>
             <Card className="border-border/50">
-              <CardContent className="p-4 text-center">
-                <Tv className="w-6 h-6 mx-auto mb-2 text-secondary" />
-                <p className="font-display font-bold text-2xl text-foreground">{earnedMinutes}</p>
-                <p className="text-xs text-muted-foreground">min earned</p>
+              <CardContent className="p-3 text-center">
+                <MapPin className="w-5 h-5 mx-auto mb-1 text-primary" />
+                <p className="font-display font-bold text-xl text-foreground">
+                  {(distanceTraveled / 1000).toFixed(2)}
+                </p>
+                <p className="text-xs text-muted-foreground">km</p>
+              </CardContent>
+            </Card>
+            <Card className="border-border/50">
+              <CardContent className="p-3 text-center">
+                <p className="font-display font-bold text-xl text-foreground">{formatTime(elapsedSeconds)}</p>
+                <p className="text-xs text-muted-foreground">time</p>
               </CardContent>
             </Card>
           </div>
 
           <Card className="mb-8 border-border/50">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Next +5 min in</span>
-                <span className="font-display font-bold text-foreground">
-                  {stepsToNextReward(passSteps).toLocaleString()} steps
-                </span>
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Tv className="w-6 h-6 text-secondary" />
+                <span className="text-sm text-muted-foreground">Screen time earned</span>
               </div>
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <motion.div className="h-full bg-primary" animate={{ width: `${((passSteps % STEPS_PER_REWARD) / STEPS_PER_REWARD) * 100}%` }} />
-              </div>
+              <span className="font-display font-bold text-2xl text-foreground">{earnedMinutes} min</span>
             </CardContent>
           </Card>
 
@@ -353,7 +359,7 @@ export default function Pass() {
           </motion.div>
 
           <div className="mt-8 text-center text-sm text-muted-foreground">
-            <p className="mb-1">100 meters = 1 minute screen time</p>
+            <p className="mb-1">1,000 steps = 5 minutes screen time</p>
             <p>Walk or run to earn more!</p>
           </div>
         </main>
