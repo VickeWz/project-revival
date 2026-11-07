@@ -39,7 +39,8 @@ it('updates each received step and earned minute while the pass stays active', a
   fireEvent.click(screen.getByRole('button', { name: 'Start Pass' }));
   await screen.findByRole('button', { name: 'End Pass' });
   const { act } = await import('@testing-library/react');
-  for (const [steps, minutes] of [[199, 0], [200, 1], [201, 1], [400, 2]]) {
+  const samples: Array<[number, number]> = [[199, 0], [200, 1], [201, 1], [400, 2]];
+  for (const [steps, minutes] of samples) {
     act(() => mocks.onData?.({ steps, distance: 110, activeMinutes: 1 }));
     expect(screen.getByLabelText('Steps this pass')).toHaveTextContent(String(steps));
     expect(screen.getByLabelText('Minutes earned')).toHaveTextContent(String(minutes));
