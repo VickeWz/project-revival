@@ -4,3 +4,4 @@
 - [ ] Verifiera riktiga HealthKit-steg och sparad skärmtid på iPhone. Blockerat: ingen iPhone kör appen här och inget konto kunde återställas för inloggad kontroll.
 - [ ] Lägg till manuell Hälsa-synkning och AI Gateway-sammanfattning av dagens aktivitet för barn; beräkna skärmtid deterministiskt.
 - [ ] Testa AI-sammanfattningens indata, åtkomst och felhantering.
+- [ ] Kontrollera Capacitor-konfiguration; bygga och testa på fysisk iPhone. Blockerat: miljön saknar macOS, Xcode och ansluten iPhone.
