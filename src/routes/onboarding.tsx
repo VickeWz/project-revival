@@ -4,6 +4,8 @@ import { OnboardingRoute } from "@/components/RouteGuards";
 export const Route = createFileRoute("/onboarding")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Get started — GameRun" },
       { name: "description", content: "Set up your GameRun account." },
       { property: "og:title", content: "Get started — GameRun" },

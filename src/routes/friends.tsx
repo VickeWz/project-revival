@@ -5,6 +5,8 @@ import Friends from "@/screens/Friends";
 export const Route = createFileRoute("/friends")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Friends — GameRun" },
       { name: "description", content: "GameRun: friends — earn screen time by staying active." },
       { property: "og:title", content: "Friends — GameRun" },

@@ -1,0 +1,9 @@
+- [x] Uppdatera Hälsa-data löpande på startsidan och under pass.
+- [x] Beräkna och spara passets skärmtid från steg, inte sträcka.
+- [x] Automatiska tester av synkning, omräkning och återförsök passerar.
+- [ ] Verifiera riktiga HealthKit-steg och sparad skärmtid på iPhone. Blockerat: ingen iPhone kör appen här och inget konto kunde återställas för inloggad kontroll.
+- [x] Lägg till manuell Hälsa-synkning och AI Gateway-sammanfattning av dagens aktivitet för barn; beräkna skärmtid deterministiskt.
+- [x] Testa AI-sammanfattningens indata och felhantering; riktigt Gateway-anrop med syntetiska 1000 steg lyckades. Totalt 17 tester passerar.
+- [ ] Verifiera inloggat AI-flöde. Blockerat: ingen tillgänglig kontosession; inget konto matchar beställaren.
+- [x] Kontrollera Capacitor-konfiguration och paket: paketen matchar, men iOS-projekt saknas och konfigurationen öppnar publicerad webbapp, inte en helt native app.
+- [ ] Bygga och testa på fysisk iPhone. Blockerat: miljön saknar macOS, Xcode och ansluten iPhone; den nuvarande webbappen är inte en helt native iOS-app.

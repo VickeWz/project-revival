@@ -4,6 +4,8 @@ import { AuthRedirect } from "@/components/RouteGuards";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "GameRun - Run More, Play More" },
       { name: "description", content: "Motivate kids to stay active by earning screen time through physical activity" },
       { property: "og:title", content: "GameRun - Run More, Play More" },

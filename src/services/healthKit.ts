@@ -45,8 +45,7 @@ class HealthKitService {
   async requestAuthorization(): Promise<boolean> {
     if (!this.isNative) {
       console.log('HealthKit is only available on native iOS devices');
-      // Return true for web preview so users can test the UI
-      return true;
+      return false;
     }
 
     try {
@@ -75,11 +74,10 @@ class HealthKitService {
 
   async getTodayData(): Promise<HealthData> {
     if (!this.isNative) {
-      // Return mock data for web preview
       return {
-        steps: Math.floor(Math.random() * 5000) + 2000,
-        distance: Math.floor(Math.random() * 3000) + 1000,
-        activeMinutes: Math.floor(Math.random() * 60) + 20,
+        steps: 0,
+        distance: 0,
+        activeMinutes: 0,
       };
     }
 
@@ -123,12 +121,54 @@ class HealthKitService {
       };
     } catch (error) {
       console.error('Error fetching HealthKit data:', error);
-      return {
-        steps: 0,
-        distance: 0,
-        activeMinutes: 0,
-      };
+      throw error;
     }
+  }
+
+  async getPassData(startDate: Date, endDate = new Date()): Promise<HealthData> {
+    if (!this.isNative) throw new Error('HealthKit requires an iOS device');
+    const options = { startDate: startDate.toISOString(), endDate: endDate.toISOString(), limit: 0 };
+    const [steps, distance] = await Promise.all([
+      this.querySamples({ ...options, sampleName: 'stepCount' }),
+      this.querySamples({ ...options, sampleName: 'distanceWalkingRunning' }),
+    ]);
+    return {
+      steps: Math.max(0, Math.round(this.sumQuantity(steps.resultData))),
+      distance: Math.max(0, Math.round(this.sumQuantity(distance.resultData))),
+      activeMinutes: Math.max(0, Math.floor((endDate.getTime() - startDate.getTime()) / 60000)),
+    };
+  }
+
+  // Foreground sync: HealthKit may publish new samples in batches, not on each footstep.
+  watchData(
+    read: () => Promise<HealthData>,
+    onData: (data: HealthData) => void,
+    onError: (error: unknown) => void = () => {},
+  ): () => void {
+    let stopped = false;
+    let pending = false;
+    const update = async () => {
+      if (stopped || pending || document.visibilityState === 'hidden') return;
+      pending = true;
+      try {
+        const data = await read();
+        if (!stopped) onData(data);
+      } catch (error) {
+        if (!stopped) onError(error);
+      } finally {
+        pending = false;
+      }
+    };
+    void update();
+    const interval = setInterval(() => void update(), 3000);
+    document.addEventListener('visibilitychange', update);
+    window.addEventListener('focus', update);
+    return () => {
+      stopped = true;
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', update);
+      window.removeEventListener('focus', update);
+    };
   }
 
   async getDistanceSince(startDate: Date): Promise<number> {
@@ -183,7 +223,7 @@ class HealthKitService {
   // Calculate screen time earned based on activity
   calculateScreenTimeEarned(data: HealthData): number {
     // Every 1000 steps = 5 minutes of screen time
-    return Math.floor(data.steps / 1000) * 5;
+    return Math.floor(Math.max(0, data.steps) / 1000) * 5;
   }
 
   isAvailable(): boolean {

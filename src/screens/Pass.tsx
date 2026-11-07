@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Play, Square, MapPin, Clock, Tv, AlertTriangle, Timer, ChevronRight, History, Settings, Info } from "lucide-react";
+import { ArrowLeft, Play, Square, Footprints, Clock, Tv, AlertTriangle, Timer, ChevronRight, History, Settings, Info } from "lucide-react";
 import { useNavigate, Link } from "@/lib/router-compat";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -16,8 +16,8 @@ import { format } from "date-fns";
 import logo from "@/assets/logo.png";
 
 interface PassSession {
+  id: string;
   startTime: Date;
-  startDistance: number;
 }
 
 interface ActivityLog {
@@ -32,7 +32,9 @@ export default function Pass() {
   const [view, setView] = useState<"home" | "active" | "screentime">("home");
   const [isActive, setIsActive] = useState(false);
   const [session, setSession] = useState<PassSession | null>(null);
-  const [currentDistance, setCurrentDistance] = useState(0);
+  const [passData, setPassData] = useState({ steps: 0, distance: 0, activeMinutes: 0 });
+  const [syncError, setSyncError] = useState(false);
+  const [starting, setStarting] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [saving, setSaving] = useState(false);
@@ -40,14 +42,13 @@ export default function Pass() {
   const [passHistory, setPassHistory] = useState<ActivityLog[]>([]);
   const [customScreenTime, setCustomScreenTime] = useState("");
   const timerRef = useRef<NodeJS.Timeout | null>(null);
-  const distanceRef = useRef<NodeJS.Timeout | null>(null);
+  const endingRef = useRef(false);
+  const endTimeRef = useRef<Date | null>(null);
   
   const { profile } = useAuth();
   const navigate = useNavigate();
 
-  // Calculate earned screen time: 100m = 1 minute
-  const distanceTraveled = session ? currentDistance - session.startDistance : 0;
-  const earnedMinutes = Math.floor(distanceTraveled / 100);
+  const earnedMinutes = healthKitService.calculateScreenTimeEarned(passData);
 
   // Fetch screen time balance and history
   useEffect(() => {
@@ -93,34 +94,32 @@ export default function Pass() {
   useEffect(() => {
     if (isActive) {
       timerRef.current = setInterval(() => {
-        setElapsedSeconds((s) => s + 1);
+        if (session) setElapsedSeconds(Math.floor((Date.now() - session.startTime.getTime()) / 1000));
       }, 1000);
     }
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [isActive]);
-
-  // Poll distance updates
-  useEffect(() => {
-    if (isActive && session) {
-      const updateDistance = async () => {
-        const distance = await healthKitService.getDistanceSince(session.startTime);
-        setCurrentDistance(session.startDistance + distance);
-      };
-      updateDistance();
-      distanceRef.current = setInterval(updateDistance, 3000);
-    }
-    return () => {
-      if (distanceRef.current) clearInterval(distanceRef.current);
-    };
   }, [isActive, session]);
+
+  // Replace cumulative session samples; never add a polled total again.
+  useEffect(() => {
+    if (!isActive || !session || saving) return;
+    return healthKitService.watchData(
+      () => healthKitService.getPassData(session.startTime),
+      (data) => { if (!endingRef.current) { setPassData(data); setSyncError(false); } },
+      () => setSyncError(true),
+    );
+  }, [isActive, session, saving]);
 
   const handleGoToActive = () => {
     setView("active");
   };
 
   const handleStart = useCallback(async () => {
+    if (starting || session) return;
+    setStarting(true);
+    try {
     if (!hasPermission) {
       const granted = await healthKitService.requestAuthorization();
       setHasPermission(granted);
@@ -130,91 +129,54 @@ export default function Pass() {
       }
     }
 
-    const data = await healthKitService.getTodayData();
     setSession({
+      id: crypto.randomUUID(),
       startTime: new Date(),
-      startDistance: data.distance,
     });
-    setCurrentDistance(data.distance);
+    endTimeRef.current = null;
+    setPassData({ steps: 0, distance: 0, activeMinutes: 0 });
+    setSyncError(false);
     setElapsedSeconds(0);
     setIsActive(true);
     toast.success("Pass started! Get moving!");
-  }, [hasPermission]);
+    } catch {
+      toast.error("Could not start pass. Please try again.");
+    } finally {
+      setStarting(false);
+    }
+  }, [hasPermission, starting, session]);
 
   const handleEnd = useCallback(async () => {
-    if (!session || !profile) return;
-    
-    setIsActive(false);
+    if (!session || !profile || endingRef.current) return;
+    endingRef.current = true;
     setSaving(true);
-
-    const finalDistance = distanceTraveled;
-    const finalEarnedMinutes = Math.floor(finalDistance / 100);
-    const today = new Date().toISOString().split("T")[0];
+    endTimeRef.current ??= new Date();
 
     try {
-      // Check if there's already an activity log for today
-      const { data: existingLog } = await supabase
-        .from("activity_logs")
-        .select("*")
-        .eq("user_id", profile.id)
-        .eq("logged_at", today)
-        .maybeSingle();
-
-      if (existingLog) {
-        // Update existing log by adding to it
-        const { error: updateError } = await supabase
-          .from("activity_logs")
-          .update({
-            distance_meters: existingLog.distance_meters + finalDistance,
-            active_minutes: existingLog.active_minutes + Math.floor(elapsedSeconds / 60),
-            screen_time_earned: existingLog.screen_time_earned + finalEarnedMinutes,
-          })
-          .eq("id", existingLog.id);
-
-        if (updateError) throw updateError;
-      } else {
-        // Insert new log for today
-        const { error: logError } = await supabase.from("activity_logs").insert({
-          user_id: profile.id,
-          steps: 0,
-          distance_meters: finalDistance,
-          active_minutes: Math.floor(elapsedSeconds / 60),
-          screen_time_earned: finalEarnedMinutes,
-          logged_at: today,
-        });
-
-        if (logError) throw logError;
-      }
-
-      // Update screen time balance
-      const { data: balanceData } = await supabase
-        .from("screen_time_balance")
-        .select("*")
-        .eq("user_id", profile.id)
-        .maybeSingle();
-
-      const newBalance = (balanceData?.minutes_remaining || 0) + finalEarnedMinutes;
-
-      if (balanceData) {
-        await supabase
-          .from("screen_time_balance")
-          .update({
-            minutes_remaining: newBalance,
-            last_updated: new Date().toISOString(),
-          })
-          .eq("user_id", profile.id);
-      } else {
-        await supabase.from("screen_time_balance").insert({
-          user_id: profile.id,
-          minutes_remaining: finalEarnedMinutes,
-        });
-      }
+      // Read once more at the fixed end time so the last received steps are included.
+      const finalData = await healthKitService.getPassData(session.startTime, endTimeRef.current);
+      setPassData(finalData);
+      const finalDistance = finalData.distance;
+      const finalEarnedMinutes = healthKitService.calculateScreenTimeEarned(finalData);
+      const today = format(session.startTime, "yyyy-MM-dd");
+      const { data: result, error: saveError } = await supabase.rpc("complete_step_pass", {
+        p_id: session.id,
+        p_started_at: session.startTime.toISOString(),
+        p_ended_at: endTimeRef.current.toISOString(),
+        p_day: today,
+        p_steps: finalData.steps,
+        p_distance: finalDistance,
+        p_active_minutes: finalData.activeMinutes,
+      });
+      if (saveError) throw saveError;
+      const newBalance = result.balance;
 
       setScreenTimeBalance(newBalance);
       toast.success(`Pass complete! Earned ${finalEarnedMinutes} minutes`, {
         description: "View your updated balance in Screentime",
       });
       setSession(null);
+      setIsActive(false);
       setElapsedSeconds(0);
       setView("screentime"); // Go to screentime to show updated balance
       
@@ -230,9 +192,10 @@ export default function Pass() {
       console.error("Error saving pass:", error);
       toast.error("Failed to save pass data");
     } finally {
+      endingRef.current = false;
       setSaving(false);
     }
-  }, [session, profile, distanceTraveled, elapsedSeconds]);
+  }, [session, profile]);
 
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
@@ -271,7 +234,7 @@ export default function Pass() {
             >
               <AlertTriangle className="w-5 h-5 text-destructive" />
               <p className="text-sm text-destructive">
-                HealthKit access required. Please enable in device Settings.
+                Apple Health is available only on iPhone. Allow step access in Settings.
               </p>
             </motion.div>
           )}
@@ -283,14 +246,15 @@ export default function Pass() {
             <p className="text-muted-foreground">{isActive ? "Pass Active" : "Ready to start"}</p>
           </motion.div>
 
+          {syncError && <p role="status" className="text-sm text-destructive mb-4">Apple Health could not sync. Retrying…</p>}
           <div className="grid grid-cols-2 gap-4 mb-8">
             <Card className="border-border/50">
               <CardContent className="p-4 text-center">
-                <MapPin className="w-6 h-6 mx-auto mb-2 text-primary" />
+                <Footprints className="w-6 h-6 mx-auto mb-2 text-primary" />
                 <p className="font-display font-bold text-2xl text-foreground">
-                  {(distanceTraveled / 1000).toFixed(2)}
+                  {passData.steps.toLocaleString()}
                 </p>
-                <p className="text-xs text-muted-foreground">km traveled</p>
+                <p className="text-xs text-muted-foreground">Steps this pass</p>
               </CardContent>
             </Card>
             <Card className="border-border/50">
@@ -305,26 +269,26 @@ export default function Pass() {
           <Card className="mb-8 border-border/50">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Next minute at</span>
+                <span className="text-sm text-muted-foreground">Next 5 minutes in</span>
                 <span className="font-display font-bold text-foreground">
-                  {((earnedMinutes + 1) * 100 - distanceTraveled).toFixed(0)}m
+                  {1000 - passData.steps % 1000} steps
                 </span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <motion.div className="h-full bg-primary" animate={{ width: `${distanceTraveled % 100}%` }} />
+                <motion.div className="h-full bg-primary" animate={{ width: `${(passData.steps % 1000) / 10}%` }} />
               </div>
             </CardContent>
           </Card>
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            {!isActive ? (
+            {!session ? (
               <Button
                 onClick={handleStart}
-                disabled={hasPermission === false}
+                disabled={hasPermission !== true || starting}
                 className="w-full h-16 text-lg font-display font-bold gradient-hero"
               >
                 <Play className="w-6 h-6 mr-2" />
-                Start Pass
+                {starting ? "Starting…" : "Start Pass"}
               </Button>
             ) : (
               <Button
@@ -340,8 +304,8 @@ export default function Pass() {
           </motion.div>
 
           <div className="mt-8 text-center text-sm text-muted-foreground">
-            <p className="mb-1">100 meters = 1 minute screen time</p>
-            <p>Walk or run to earn more!</p>
+            <p className="mb-1">1000 steps = 5 minutes screen time</p>
+            <p>Apple Health may deliver new steps with a delay.</p>
           </div>
         </main>
       </div>
@@ -519,7 +483,7 @@ export default function Pass() {
                 <h3 className="font-display font-semibold text-foreground">How It Works</h3>
               </div>
               <div className="space-y-2 text-sm text-muted-foreground">
-                <p>• <span className="text-foreground font-medium">5,000 steps = 1 hour</span> of screen time</p>
+                <p>• <span className="text-foreground font-medium">1000 steps = 5 minutes</span> of screen time</p>
                 <p>• A pass tracks your activity until you end it</p>
                 <p>• Walk, run, or explore to earn more time</p>
                 <p>• Use your balance anytime in Screentime</p>

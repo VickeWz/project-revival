@@ -9,6 +9,7 @@ import { healthKitService, type HealthData } from "@/services/healthKit";
 import { notificationService } from "@/services/notifications";
 import { BottomNav } from "@/components/BottomNav";
 import { StatsSection } from "@/components/home/StatsSection";
+import { ActivitySummary } from "@/components/home/ActivitySummary";
 import logo from "@/assets/logo.png";
 
 const dailyChallenges = [
@@ -37,15 +38,20 @@ export default function ChildDashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchHealthData = async () => {
-      const data = await healthKitService.getTodayData();
-      setHealthData(data);
-      setScreenTimeEarned(healthKitService.calculateScreenTimeEarned(data));
-    };
-
-    fetchHealthData();
-    const interval = setInterval(fetchHealthData, 5 * 60 * 1000);
-    return () => clearInterval(interval);
+    if (!healthKitService.isAvailable()) return;
+    let cancelled = false;
+    let stopWatching = () => {};
+    void healthKitService.requestAuthorization().then((granted) => {
+      if (cancelled || !granted) return;
+      stopWatching = healthKitService.watchData(
+        () => healthKitService.getTodayData(),
+        (data) => {
+          setHealthData(data);
+          setScreenTimeEarned(healthKitService.calculateScreenTimeEarned(data));
+        },
+      );
+    });
+    return () => { cancelled = true; stopWatching(); };
   }, []);
 
   useEffect(() => {
@@ -193,6 +199,11 @@ export default function ChildDashboard() {
             </div>
           </div>
         </motion.div>
+
+        <ActivitySummary onSync={(data) => {
+          setHealthData(data);
+          setScreenTimeEarned(healthKitService.calculateScreenTimeEarned(data));
+        }} />
 
         {/* How to Earn Screen Time */}
         <motion.div

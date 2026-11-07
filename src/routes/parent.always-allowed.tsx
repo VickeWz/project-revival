@@ -5,6 +5,8 @@ import AlwaysAllowed from "@/screens/parent/AlwaysAllowed";
 export const Route = createFileRoute("/parent/always-allowed")({
   head: () => ({
     meta: [
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       { title: "Always allowed apps — GameRun" },
       { name: "description", content: "GameRun: always allowed apps — earn screen time by staying active." },
       { property: "og:title", content: "Always allowed apps — GameRun" },
