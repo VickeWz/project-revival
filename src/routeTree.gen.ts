@@ -10,33 +10,232 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ChallengesRouteImport } from './routes/challenges'
+import { Route as ChildRouteImport } from './routes/child'
+import { Route as FriendsRouteImport } from './routes/friends'
+import { Route as HelpSupportRouteImport } from './routes/help-support'
+import { Route as OnboardingRouteImport } from './routes/onboarding'
+import { Route as PassRouteImport } from './routes/pass'
+import { Route as PrivacyPolicyRouteImport } from './routes/privacy-policy'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as StatsRouteImport } from './routes/stats'
+import { Route as ParentIndexRouteImport } from './routes/parent.index'
+import { Route as ParentAddChildRouteImport } from './routes/parent.add-child'
+import { Route as ParentAlwaysAllowedRouteImport } from './routes/parent.always-allowed'
+import { Route as ParentAppLimitsRouteImport } from './routes/parent.app-limits'
+import { Route as ParentDowntimeRouteImport } from './routes/parent.downtime'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ChallengesRoute = ChallengesRouteImport.update({
+  id: '/challenges',
+  path: '/challenges',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ChildRoute = ChildRouteImport.update({
+  id: '/child',
+  path: '/child',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FriendsRoute = FriendsRouteImport.update({
+  id: '/friends',
+  path: '/friends',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HelpSupportRoute = HelpSupportRouteImport.update({
+  id: '/help-support',
+  path: '/help-support',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const OnboardingRoute = OnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PassRoute = PassRouteImport.update({
+  id: '/pass',
+  path: '/pass',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyPolicyRoute = PrivacyPolicyRouteImport.update({
+  id: '/privacy-policy',
+  path: '/privacy-policy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StatsRoute = StatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ParentIndexRoute = ParentIndexRouteImport.update({
+  id: '/parent/',
+  path: '/parent/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ParentAddChildRoute = ParentAddChildRouteImport.update({
+  id: '/parent/add-child',
+  path: '/parent/add-child',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ParentAlwaysAllowedRoute = ParentAlwaysAllowedRouteImport.update({
+  id: '/parent/always-allowed',
+  path: '/parent/always-allowed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ParentAppLimitsRoute = ParentAppLimitsRouteImport.update({
+  id: '/parent/app-limits',
+  path: '/parent/app-limits',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ParentDowntimeRoute = ParentDowntimeRouteImport.update({
+  id: '/parent/downtime',
+  path: '/parent/downtime',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/challenges': typeof ChallengesRoute
+  '/child': typeof ChildRoute
+  '/friends': typeof FriendsRoute
+  '/help-support': typeof HelpSupportRoute
+  '/onboarding': typeof OnboardingRoute
+  '/pass': typeof PassRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/profile': typeof ProfileRoute
+  '/settings': typeof SettingsRoute
+  '/stats': typeof StatsRoute
+  '/parent/add-child': typeof ParentAddChildRoute
+  '/parent/always-allowed': typeof ParentAlwaysAllowedRoute
+  '/parent/app-limits': typeof ParentAppLimitsRoute
+  '/parent/downtime': typeof ParentDowntimeRoute
+  '/parent/': typeof ParentIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/challenges': typeof ChallengesRoute
+  '/child': typeof ChildRoute
+  '/friends': typeof FriendsRoute
+  '/help-support': typeof HelpSupportRoute
+  '/onboarding': typeof OnboardingRoute
+  '/pass': typeof PassRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/profile': typeof ProfileRoute
+  '/settings': typeof SettingsRoute
+  '/stats': typeof StatsRoute
+  '/parent/add-child': typeof ParentAddChildRoute
+  '/parent/always-allowed': typeof ParentAlwaysAllowedRoute
+  '/parent/app-limits': typeof ParentAppLimitsRoute
+  '/parent/downtime': typeof ParentDowntimeRoute
+  '/parent': typeof ParentIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/challenges': typeof ChallengesRoute
+  '/child': typeof ChildRoute
+  '/friends': typeof FriendsRoute
+  '/help-support': typeof HelpSupportRoute
+  '/onboarding': typeof OnboardingRoute
+  '/pass': typeof PassRoute
+  '/privacy-policy': typeof PrivacyPolicyRoute
+  '/profile': typeof ProfileRoute
+  '/settings': typeof SettingsRoute
+  '/stats': typeof StatsRoute
+  '/parent/add-child': typeof ParentAddChildRoute
+  '/parent/always-allowed': typeof ParentAlwaysAllowedRoute
+  '/parent/app-limits': typeof ParentAppLimitsRoute
+  '/parent/downtime': typeof ParentDowntimeRoute
+  '/parent/': typeof ParentIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/challenges'
+    | '/child'
+    | '/friends'
+    | '/help-support'
+    | '/onboarding'
+    | '/pass'
+    | '/privacy-policy'
+    | '/profile'
+    | '/settings'
+    | '/stats'
+    | '/parent/add-child'
+    | '/parent/always-allowed'
+    | '/parent/app-limits'
+    | '/parent/downtime'
+    | '/parent/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/challenges'
+    | '/child'
+    | '/friends'
+    | '/help-support'
+    | '/onboarding'
+    | '/pass'
+    | '/privacy-policy'
+    | '/profile'
+    | '/settings'
+    | '/stats'
+    | '/parent/add-child'
+    | '/parent/always-allowed'
+    | '/parent/app-limits'
+    | '/parent/downtime'
+    | '/parent'
+  id:
+    | '__root__'
+    | '/'
+    | '/challenges'
+    | '/child'
+    | '/friends'
+    | '/help-support'
+    | '/onboarding'
+    | '/pass'
+    | '/privacy-policy'
+    | '/profile'
+    | '/settings'
+    | '/stats'
+    | '/parent/add-child'
+    | '/parent/always-allowed'
+    | '/parent/app-limits'
+    | '/parent/downtime'
+    | '/parent/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ChallengesRoute: typeof ChallengesRoute
+  ChildRoute: typeof ChildRoute
+  FriendsRoute: typeof FriendsRoute
+  HelpSupportRoute: typeof HelpSupportRoute
+  OnboardingRoute: typeof OnboardingRoute
+  PassRoute: typeof PassRoute
+  PrivacyPolicyRoute: typeof PrivacyPolicyRoute
+  ProfileRoute: typeof ProfileRoute
+  SettingsRoute: typeof SettingsRoute
+  StatsRoute: typeof StatsRoute
+  ParentAddChildRoute: typeof ParentAddChildRoute
+  ParentAlwaysAllowedRoute: typeof ParentAlwaysAllowedRoute
+  ParentAppLimitsRoute: typeof ParentAppLimitsRoute
+  ParentDowntimeRoute: typeof ParentDowntimeRoute
+  ParentIndexRoute: typeof ParentIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +247,131 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/challenges': {
+      id: '/challenges'
+      path: '/challenges'
+      fullPath: '/challenges'
+      preLoaderRoute: typeof ChallengesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/child': {
+      id: '/child'
+      path: '/child'
+      fullPath: '/child'
+      preLoaderRoute: typeof ChildRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/friends': {
+      id: '/friends'
+      path: '/friends'
+      fullPath: '/friends'
+      preLoaderRoute: typeof FriendsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/help-support': {
+      id: '/help-support'
+      path: '/help-support'
+      fullPath: '/help-support'
+      preLoaderRoute: typeof HelpSupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/onboarding': {
+      id: '/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof OnboardingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/pass': {
+      id: '/pass'
+      path: '/pass'
+      fullPath: '/pass'
+      preLoaderRoute: typeof PassRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy-policy': {
+      id: '/privacy-policy'
+      path: '/privacy-policy'
+      fullPath: '/privacy-policy'
+      preLoaderRoute: typeof PrivacyPolicyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/stats': {
+      id: '/stats'
+      path: '/stats'
+      fullPath: '/stats'
+      preLoaderRoute: typeof StatsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/parent/': {
+      id: '/parent/'
+      path: '/parent'
+      fullPath: '/parent/'
+      preLoaderRoute: typeof ParentIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/parent/add-child': {
+      id: '/parent/add-child'
+      path: '/parent/add-child'
+      fullPath: '/parent/add-child'
+      preLoaderRoute: typeof ParentAddChildRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/parent/always-allowed': {
+      id: '/parent/always-allowed'
+      path: '/parent/always-allowed'
+      fullPath: '/parent/always-allowed'
+      preLoaderRoute: typeof ParentAlwaysAllowedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/parent/app-limits': {
+      id: '/parent/app-limits'
+      path: '/parent/app-limits'
+      fullPath: '/parent/app-limits'
+      preLoaderRoute: typeof ParentAppLimitsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/parent/downtime': {
+      id: '/parent/downtime'
+      path: '/parent/downtime'
+      fullPath: '/parent/downtime'
+      preLoaderRoute: typeof ParentDowntimeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ChallengesRoute: ChallengesRoute,
+  ChildRoute: ChildRoute,
+  FriendsRoute: FriendsRoute,
+  HelpSupportRoute: HelpSupportRoute,
+  OnboardingRoute: OnboardingRoute,
+  PassRoute: PassRoute,
+  PrivacyPolicyRoute: PrivacyPolicyRoute,
+  ProfileRoute: ProfileRoute,
+  SettingsRoute: SettingsRoute,
+  StatsRoute: StatsRoute,
+  ParentAddChildRoute: ParentAddChildRoute,
+  ParentAlwaysAllowedRoute: ParentAlwaysAllowedRoute,
+  ParentAppLimitsRoute: ParentAppLimitsRoute,
+  ParentDowntimeRoute: ParentDowntimeRoute,
+  ParentIndexRoute: ParentIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
