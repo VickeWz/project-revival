@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -21,7 +22,9 @@ interface AuthContextType {
   signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Keep one context instance across hot reloads so provider and consumers always match.
+const g = globalThis as { __gamerunAuthCtx?: React.Context<AuthContextType | undefined> };
+const AuthContext = (g.__gamerunAuthCtx ??= createContext<AuthContextType | undefined>(undefined));
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -130,10 +133,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
+const fallbackAuth: AuthContextType = {
+  user: null, session: null, profile: null, loading: true,
+  signUp: async () => ({ error: new Error('Auth not ready') }),
+  signIn: async () => ({ error: new Error('Auth not ready') }),
+  signOut: async () => {},
+};
+
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
+  // Outside a provider (e.g. mid hot-reload) behave as "still loading" instead of crashing.
+  return context ?? fallbackAuth;
 }
