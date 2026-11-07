@@ -78,46 +78,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, displayName: string, role: 'parent' | 'child') => {
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: window.location.origin,
-        }
+          // Profile (and a child's screen-time balance) is created by a database trigger.
+          data: { display_name: displayName, role },
+        },
       });
 
       if (error) throw error;
-
-      if (data.user) {
-        // Create profile
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            user_id: data.user.id,
-            display_name: displayName,
-            role: role,
-          });
-
-        if (profileError) throw profileError;
-
-        // Create screen time balance for children
-        if (role === 'child') {
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('user_id', data.user.id)
-            .single();
-
-          if (profileData) {
-            await supabase
-              .from('screen_time_balance')
-              .insert({
-                user_id: profileData.id,
-                minutes_remaining: 0,
-              });
-          }
-        }
-      }
 
       return { error: null };
     } catch (error) {
