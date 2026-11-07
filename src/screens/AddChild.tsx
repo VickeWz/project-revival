@@ -13,8 +13,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 
 const linkChildSchema = z.object({
-  email: z.string().trim().email("Please enter a valid email address"),
-  password: z.string().min(1, "Password is required"),
+  email: z.string().trim().email("Ange en giltig e-postadress"),
+  password: z.string().min(1, "Ange lösenord"),
 });
 
 export default function AddChild() {
@@ -40,7 +40,7 @@ export default function AddChild() {
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       if (!sessionData.session) {
-        setError("You must be logged in to add a child");
+        setError("Logga in för att lägga till ett barn");
         return;
       }
 
@@ -54,14 +54,14 @@ export default function AddChild() {
         return;
       }
 
-      toast.success(response.data?.message || "Child linked successfully!", {
-        description: `${response.data?.childName || "Child"} has been added to your account.`,
+      toast.success(response.data?.message || "Barnets konto är kopplat!", {
+        description: `${response.data?.childName || "Barnet"} har kopplats till ditt konto.`,
       });
 
       navigate("/parent");
     } catch (err) {
       console.error("Error linking child:", err);
-      setError("An unexpected error occurred. Please try again.");
+      setError("Ett oväntat fel uppstod. Försök igen.");
     } finally {
       setLoading(false);
     }
@@ -76,7 +76,7 @@ export default function AddChild() {
             <ArrowLeft className="w-5 h-5" />
           </Button>
           <div className="flex-1 text-center font-display font-bold text-xl text-foreground">
-            Add Child
+            Lägg till barn
           </div>
           <div className="w-10" />
         </div>
@@ -97,9 +97,9 @@ export default function AddChild() {
               >
                 <UserPlus className="w-8 h-8 text-primary-foreground" />
               </motion.div>
-              <CardTitle className="font-display text-2xl">Link Child Account</CardTitle>
+              <CardTitle className="font-display text-2xl">Koppla barnets konto</CardTitle>
               <CardDescription className="text-muted-foreground">
-                Enter your child's login credentials to link their account
+                Ange barnets inloggningsuppgifter för att koppla kontot
               </CardDescription>
             </CardHeader>
 
@@ -120,14 +120,14 @@ export default function AddChild() {
                 {/* Email Field */}
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-foreground font-medium">
-                    Child's Email
+                    Barnets e-post
                   </Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
                       id="email"
                       type="email"
-                      placeholder="child@example.com"
+                      placeholder="barn@epost.se"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       className="pl-10 h-12 bg-muted/50 border-border/50"
@@ -140,14 +140,14 @@ export default function AddChild() {
                 {/* Password Field */}
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-foreground font-medium">
-                    Child's Password
+                    Barnets lösenord
                   </Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <Input
                       id="password"
                       type="password"
-                      placeholder="Enter password"
+                      placeholder="Ange lösenord"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="pl-10 h-12 bg-muted/50 border-border/50"
@@ -166,12 +166,12 @@ export default function AddChild() {
                   {loading ? (
                     <>
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Linking...
+                      Kopplar…
                     </>
                   ) : (
                     <>
                       <UserPlus className="w-5 h-5 mr-2" />
-                      Link Child Account
+                      Koppla barnets konto
                     </>
                   )}
                 </Button>
@@ -187,7 +187,7 @@ export default function AddChild() {
                 <div className="flex items-start gap-3">
                   <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                   <div className="text-sm text-muted-foreground">
-                    <p className="font-medium text-foreground mb-1">How it works</p>
+                    <p className="font-medium text-foreground mb-1">Koppla konto</p>
                     <ul className="space-y-1">
                       <li>• Your child must have an existing account</li>
                       <li>• Enter their login credentials to verify</li>

@@ -178,7 +178,7 @@ export function ScreenTimeInsights({ children }: ScreenTimeInsightsProps) {
         <div className="px-4 pb-4 border-t border-border/50 pt-3">
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">
-              {selectedDay === 6 ? "Today" : dayNames[selectedDay]}
+              {selectedDay === 6 ? "Idag" : dayNames[selectedDay]}
             </span>
             <span className="text-lg font-semibold text-foreground">
               {formatTime(mockChildData.weeklyData[selectedDay])}
@@ -311,7 +311,7 @@ export function ScreenTimeInsights({ children }: ScreenTimeInsightsProps) {
             <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
               <Clock className="w-4 h-4 text-white" />
             </div>
-            <span className="font-medium text-foreground">Downtime</span>
+            <span className="font-medium text-foreground">Skärmfri tid</span>
           </div>
           <ChevronRight className="w-5 h-5 text-muted-foreground" />
         </button>
@@ -323,7 +323,7 @@ export function ScreenTimeInsights({ children }: ScreenTimeInsightsProps) {
             <div className="w-8 h-8 rounded-lg bg-amber-500 flex items-center justify-center">
               <Gamepad2 className="w-4 h-4 text-white" />
             </div>
-            <span className="font-medium text-foreground">App Limits</span>
+            <span className="font-medium text-foreground">Appgränser</span>
           </div>
           <ChevronRight className="w-5 h-5 text-muted-foreground" />
         </button>
@@ -335,7 +335,7 @@ export function ScreenTimeInsights({ children }: ScreenTimeInsightsProps) {
             <div className="w-8 h-8 rounded-lg bg-green-500 flex items-center justify-center">
               <BookOpen className="w-4 h-4 text-white" />
             </div>
-            <span className="font-medium text-foreground">Always Allowed</span>
+            <span className="font-medium text-foreground">Alltid tillåtna</span>
           </div>
           <ChevronRight className="w-5 h-5 text-muted-foreground" />
         </button>

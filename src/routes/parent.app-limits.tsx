@@ -7,10 +7,10 @@ export const Route = createFileRoute("/parent/app-limits")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { title: "App limits — GameRun" },
-      { name: "description", content: "GameRun: app limits — earn screen time by staying active." },
-      { property: "og:title", content: "App limits — GameRun" },
-      { property: "og:description", content: "Earn screen time by staying active with GameRun." },
+      { title: "Appgränser — GameRun" },
+      { name: "description", content: "Appgränser i GameRun. Följ verklig aktivitet och skärmtid från steg." },
+      { property: "og:title", content: "Appgränser — GameRun" },
+      { property: "og:description", content: "Appgränser i GameRun. Följ verklig aktivitet och skärmtid från steg." },
     ],
   }),
   component: () => (

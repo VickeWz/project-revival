@@ -29,28 +29,28 @@ export default function ResetPassword() {
       toast.error(error.message);
       return;
     }
-    toast.success("Password updated!");
+    toast.success("Lösenordet är uppdaterat!");
     navigate("/");
   };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
       <div className="w-full max-w-md bg-card rounded-2xl p-6 shadow-card border border-border/50">
-        <h1 className="text-center text-xl font-semibold text-foreground mb-6">Choose a new password</h1>
+        <h1 className="text-center text-xl font-semibold text-foreground mb-6">Välj ett nytt lösenord</h1>
         {ready ? (
           <form onSubmit={submit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="new-password">New password</Label>
+              <Label htmlFor="new-password">Nytt lösenord</Label>
               <Input id="new-password" type="password" minLength={6} required value={password}
                 onChange={(e) => setPassword(e.target.value)} className="bg-muted border-border" />
             </div>
             <Button type="submit" className="w-full" size="lg" disabled={loading}>
-              {loading ? "Saving..." : "Save new password"}
+              {loading ? "Sparar…" : "Spara nytt lösenord"}
             </Button>
           </form>
         ) : (
           <p className="text-center text-sm text-muted-foreground">
-            Open this page from the reset link in your email.
+            Öppna sidan via återställningslänken i din e-post.
           </p>
         )}
       </div>

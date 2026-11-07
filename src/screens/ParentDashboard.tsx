@@ -203,7 +203,7 @@ export default function ParentDashboard() {
 
       if (balanceError) throw balanceError;
 
-      toast.success(`Approved ${minutesToGrant} minutes for ${request.childName}!`);
+      toast.success(`Godkänt ${minutesToGrant} minuter för ${request.childName}!`);
       setRequests(prev => prev.filter(r => r.id !== request.id));
       setEditingMinutes(prev => {
         const newState = { ...prev };
@@ -213,7 +213,7 @@ export default function ParentDashboard() {
       fetchLinkedChildren();
     } catch (error) {
       console.error("Error accepting request:", error);
-      toast.error("Failed to approve request");
+      toast.error("Kunde inte godkänna förfrågan");
     } finally {
       setProcessingRequest(null);
     }
@@ -235,11 +235,11 @@ export default function ParentDashboard() {
 
       if (error) throw error;
 
-      toast.info(`Declined request from ${request.childName}`);
+      toast.info(`Avslagit förfrågan från ${request.childName}`);
       setRequests(prev => prev.filter(r => r.id !== request.id));
     } catch (error) {
       console.error("Error declining request:", error);
-      toast.error("Failed to decline request");
+      toast.error("Kunde inte avslå förfrågan");
     } finally {
       setProcessingRequest(null);
     }
@@ -265,14 +265,14 @@ export default function ParentDashboard() {
 
       if (error) throw error;
 
-      toast.success(`Granted 15 minutes to ${childName}!`, {
-        description: "Screen time has been added to their account.",
+      toast.success(`Gett 15 minuter till ${childName}!`, {
+        description: "Skärmtiden har lagts till på kontot.",
       });
 
       fetchLinkedChildren();
     } catch (error) {
       console.error("Error granting time:", error);
-      toast.error("Failed to grant screen time");
+      toast.error("Kunde inte ge skärmtid");
     }
   };
 
@@ -286,11 +286,11 @@ export default function ParentDashboard() {
 
       if (error) throw error;
 
-      toast.success(`${childName} has been removed from your account`);
+      toast.success(`${childName} har kopplats bort från ditt konto`);
       setChildren(prev => prev.filter(c => c.id !== childId));
     } catch (error) {
       console.error("Error removing child:", error);
-      toast.error("Failed to remove child");
+      toast.error("Kunde inte koppla bort barnet");
     }
   };
 
@@ -300,10 +300,10 @@ export default function ParentDashboard() {
   };
 
   const stats = [
-    { label: "Total Kids", value: children.length.toString(), icon: Users, color: "gradient-activity" },
-    { label: "Avg Activity", value: children.length > 0 ? `${Math.round(children.reduce((a, c) => a + c.activityProgress, 0) / children.length)}%` : "0%", icon: Activity, color: "gradient-reward" },
-    { label: "Time Granted", value: `${children.reduce((a, c) => a + c.screenTimeRemaining, 0)}m`, icon: Clock, color: "gradient-hero" },
-    { label: "Active Kids", value: children.filter(c => !c.isLocked).length.toString(), icon: TrendingUp, color: "gradient-activity" },
+    { label: "Antal barn", value: children.length.toString(), icon: Users, color: "gradient-activity" },
+    { label: "Genomsnittlig aktivitet", value: children.length > 0 ? `${Math.round(children.reduce((a, c) => a + c.activityProgress, 0) / children.length)}%` : "0%", icon: Activity, color: "gradient-reward" },
+    { label: "Tid kvar totalt", value: `${children.reduce((a, c) => a + c.screenTimeRemaining, 0)}m`, icon: Clock, color: "gradient-hero" },
+    { label: "Barn med tid kvar", value: children.filter(c => !c.isLocked).length.toString(), icon: TrendingUp, color: "gradient-activity" },
   ];
 
   return (
@@ -314,9 +314,9 @@ export default function ParentDashboard() {
           <div className="flex items-center gap-4">
             <div>
               <h1 className="font-display font-bold text-xl text-foreground">
-                Welcome, {profile?.display_name || 'Parent'}
+                Välkommen, {profile?.display_name || 'Förälder'}
               </h1>
-              <p className="text-sm text-muted-foreground">Manage your children's screen time</p>
+              <p className="text-sm text-muted-foreground">Hantera dina barns skärmtid</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -370,10 +370,10 @@ export default function ParentDashboard() {
         {/* Children Section */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="font-display font-bold text-2xl text-foreground">Your Children</h2>
+            <h2 className="font-display font-bold text-2xl text-foreground">Dina barn</h2>
             <Button variant="outline" size="sm" onClick={() => navigate("/parent/add-child")}>
               <Plus className="w-4 h-4 mr-1" />
-              Add Child
+              Lägg till barn
             </Button>
           </div>
 
@@ -388,11 +388,11 @@ export default function ParentDashboard() {
               className="text-center py-12 bg-card rounded-2xl border border-border/50"
             >
               <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="font-display font-bold text-lg text-foreground mb-2">No children linked yet</h3>
-              <p className="text-muted-foreground mb-6">Link your child's account to start monitoring their activity</p>
+              <h3 className="font-display font-bold text-lg text-foreground mb-2">Inga barn är kopplade ännu</h3>
+              <p className="text-muted-foreground mb-6">Koppla barnets konto för att se sparad aktivitet</p>
               <Button onClick={() => navigate("/parent/add-child")} className="gradient-hero">
                 <Plus className="w-4 h-4 mr-2" />
-                Add Your First Child
+                Lägg till ditt första barn
               </Button>
             </motion.div>
           ) : (
@@ -427,7 +427,7 @@ export default function ParentDashboard() {
           transition={{ delay: 0.6 }}
           className="bg-card rounded-2xl p-6 shadow-card border border-border/50 mb-8"
         >
-          <h3 className="font-display font-bold text-lg text-foreground mb-4">Quick Actions</h3>
+          <h3 className="font-display font-bold text-lg text-foreground mb-4">Genvägar</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Button variant="outline" className="h-auto py-4 flex-col gap-2">
               <Clock className="w-5 h-5" />
@@ -443,7 +443,7 @@ export default function ParentDashboard() {
             </Button>
             <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate('/settings')}>
               <Settings className="w-5 h-5" />
-              <span className="text-xs">Settings</span>
+              <span className="text-xs">Inställningar</span>
             </Button>
           </div>
         </motion.div>
@@ -457,10 +457,10 @@ export default function ParentDashboard() {
         >
           <div className="flex items-center gap-2 mb-4">
             <Clock className="w-5 h-5 text-primary" />
-            <h3 className="font-display font-bold text-lg text-foreground">Pending Screen Time Requests</h3>
+            <h3 className="font-display font-bold text-lg text-foreground">Förfrågningar om skärmtid</h3>
             {requests.length > 0 && (
               <span className="ml-auto bg-primary/20 text-primary text-xs font-bold px-2 py-1 rounded-full">
-                {requests.length} pending
+                {requests.length} väntande
               </span>
             )}
           </div>
@@ -468,7 +468,7 @@ export default function ParentDashboard() {
           {requests.length === 0 ? (
             <div className="text-center py-8">
               <Clock className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-50" />
-              <p className="text-muted-foreground">No pending requests</p>
+              <p className="text-muted-foreground">Inga väntande förfrågningar</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -491,14 +491,14 @@ export default function ParentDashboard() {
                       <div className="flex-1">
                         <p className="font-medium text-foreground">{request.childName}</p>
                         <p className="text-sm text-muted-foreground">
-                          Requested {request.requestedMinutes} minutes
+                          Begärde {request.requestedMinutes} minuter
                         </p>
                       </div>
                     </div>
                     
                     {/* Adjustable Minutes */}
                     <div className="flex items-center justify-between bg-card/50 rounded-lg p-3 mb-3">
-                      <p className="text-sm text-muted-foreground">Grant:</p>
+                      <p className="text-sm text-muted-foreground">Ge:</p>
                       <div className="flex items-center gap-3">
                         <motion.button
                           whileHover={{ scale: 1.1 }}
@@ -551,7 +551,7 @@ export default function ParentDashboard() {
                         ) : (
                           <>
                             <X className="w-4 h-4 mr-1" />
-                            Decline
+                            Avslå
                           </>
                         )}
                       </Button>

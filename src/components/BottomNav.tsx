@@ -4,9 +4,9 @@ import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 
 const navItems = [
-  { to: "/child", icon: Home, label: "Home" },
+  { to: "/child", icon: Home, label: "Hem" },
   { to: "/pass", icon: Ticket, label: "Pass" },
-  { to: "/profile", icon: User, label: "Profile" },
+  { to: "/profile", icon: User, label: "Profil" },
 ];
 export const BottomNav = () => {
   return (

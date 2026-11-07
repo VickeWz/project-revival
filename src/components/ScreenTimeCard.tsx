@@ -11,19 +11,19 @@ export const ScreenTimeCard = ({ minutes, type, className = "" }: ScreenTimeCard
   const configs = {
     earned: {
       icon: Zap,
-      label: "Earned Today",
+      label: "Intjänat idag",
       gradient: "gradient-activity",
       glow: "shadow-glow-primary",
     },
     remaining: {
       icon: Timer,
-      label: "Time Remaining",
+      label: "Tid kvar",
       gradient: "gradient-hero",
       glow: "shadow-glow-secondary",
     },
     bonus: {
       icon: Gift,
-      label: "Bonus Time",
+      label: "Extra tid",
       gradient: "gradient-reward",
       glow: "shadow-glow-primary",
     },

@@ -119,7 +119,7 @@ const Profile = () => {
   const handleAskForTime = async () => {
     if (!profile?.id || !parentInfo?.id) return;
     if (requestMinutes < 5 || requestMinutes > 120) {
-      toast.error("Please select between 5 and 120 minutes");
+      toast.error("Välj mellan 5 och 120 minuter");
       return;
     }
 
@@ -136,13 +136,13 @@ const Profile = () => {
 
       if (error) throw error;
 
-      toast.success("Request sent!", {
-        description: `Your parent will see your request for ${requestMinutes} minutes.`,
+      toast.success("Förfrågan skickad!", {
+        description: `Din förälder ser din förfrågan om ${requestMinutes} minuter.`,
       });
       setPendingRequest(true);
     } catch (error) {
       console.error("Error sending request:", error);
-      toast.error("Failed to send request");
+      toast.error("Kunde inte skicka förfrågan");
     } finally {
       setRequesting(false);
     }
@@ -212,11 +212,11 @@ const Profile = () => {
                 <div className="flex items-center gap-3">
                   <Target className="w-5 h-5 text-primary" />
                   <div>
-                    <p className="text-sm font-medium text-foreground">Daily Step Goal</p>
-                    <p className="text-xs text-muted-foreground">Set in settings</p>
+                    <p className="text-sm font-medium text-foreground">Dagligt stegmål</p>
+                    <p className="text-xs text-muted-foreground">Ändra i inställningarna</p>
                   </div>
                 </div>
-                <p className="text-xl font-bold text-primary">{dailyStepGoal.toLocaleString()}</p>
+                <p className="text-xl font-bold text-primary">{dailyStepGoal.toLocaleString("sv-SE")}</p>
               </motion.div>
             </div>
           </motion.div>
@@ -227,7 +227,7 @@ const Profile = () => {
       <div className="px-6 mt-4">
         <div className="flex items-center gap-2 mb-4">
           <Users className="w-5 h-5 text-primary" />
-          <h2 className="font-display text-lg font-semibold text-foreground">My Parent</h2>
+          <h2 className="font-display text-lg font-semibold text-foreground">Min förälder</h2>
         </div>
 
         {loading ? (
@@ -241,8 +241,8 @@ const Profile = () => {
             className="text-center py-8 bg-card rounded-2xl border border-border/50"
           >
             <Users className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
-            <h3 className="font-display font-bold text-foreground mb-2">No parent linked</h3>
-            <p className="text-sm text-muted-foreground">Ask your parent to link your account</p>
+            <h3 className="font-display font-bold text-foreground mb-2">Ingen förälder kopplad</h3>
+            <p className="text-sm text-muted-foreground">Be din förälder att koppla ditt konto</p>
           </motion.div>
         ) : (
           <motion.div
@@ -261,14 +261,14 @@ const Profile = () => {
               </div>
               <div className="flex-1">
                 <h3 className="font-display font-bold text-lg text-foreground">{parentInfo.name}</h3>
-                <p className="text-sm text-muted-foreground">Parent Account</p>
+                <p className="text-sm text-muted-foreground">Föräldrakonto</p>
               </div>
             </div>
 
             {/* Time Selector */}
             {!pendingRequest && (
               <div className="mb-4">
-                <p className="text-sm text-muted-foreground mb-3 text-center">How much time do you need?</p>
+                <p className="text-sm text-muted-foreground mb-3 text-center">Hur mycket tid behöver du?</p>
                 <div className="flex items-center justify-center gap-4">
                   <motion.button
                     whileHover={{ scale: 1.1 }}
@@ -288,7 +288,7 @@ const Profile = () => {
                     >
                       {requestMinutes}
                     </motion.p>
-                    <p className="text-xs text-muted-foreground">minutes</p>
+                    <p className="text-xs text-muted-foreground">minuter</p>
                   </div>
                   <motion.button
                     whileHover={{ scale: 1.1 }}
@@ -331,13 +331,13 @@ const Profile = () => {
                 ) : (
                   <Clock className="w-4 h-4 mr-2" />
                 )}
-                {pendingRequest ? "Request Pending" : `Ask for ${requestMinutes} min`}
+                {pendingRequest ? "Väntar på svar" : `Be om ${requestMinutes} min`}
               </Button>
             </div>
 
             {pendingRequest && (
               <p className="text-xs text-muted-foreground text-center mt-3">
-                You have a pending request. Wait for your parent to respond.
+                Din förfrågan väntar på svar från din förälder.
               </p>
             )}
           </motion.div>

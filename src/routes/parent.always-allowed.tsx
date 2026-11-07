@@ -7,10 +7,10 @@ export const Route = createFileRoute("/parent/always-allowed")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { title: "Always allowed apps — GameRun" },
-      { name: "description", content: "GameRun: always allowed apps — earn screen time by staying active." },
-      { property: "og:title", content: "Always allowed apps — GameRun" },
-      { property: "og:description", content: "Earn screen time by staying active with GameRun." },
+      { title: "Alltid tillåtna appar — GameRun" },
+      { name: "description", content: "Alltid tillåtna appar i GameRun. Följ verklig aktivitet och skärmtid från steg." },
+      { property: "og:title", content: "Alltid tillåtna appar — GameRun" },
+      { property: "og:description", content: "Alltid tillåtna appar i GameRun. Följ verklig aktivitet och skärmtid från steg." },
     ],
   }),
   component: () => (

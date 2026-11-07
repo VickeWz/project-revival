@@ -66,12 +66,12 @@ export const ChallengeCard = ({
             {isCompleted ? (
               <div className="flex items-center gap-1 text-primary">
                 <CheckCircle2 className="w-4 h-4" />
-                <span className="text-sm font-medium">Completed!</span>
+                <span className="text-sm font-medium">Slutförd!</span>
               </div>
             ) : (
               <Button size="sm" variant="hero" onClick={onStart}>
                 <Play className="w-3 h-3" />
-                Start
+                Starta
               </Button>
             )}
           </div>

@@ -94,7 +94,7 @@ export default function HelpSupport() {
           <Button variant="ghost" size="icon" onClick={() => navigate("/settings")}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="font-display font-bold text-xl text-foreground">Help & Support</h1>
+          <h1 className="font-display font-bold text-xl text-foreground">Hjälp och support</h1>
         </div>
       </header>
 
@@ -109,10 +109,10 @@ export default function HelpSupport() {
             <HelpCircle className="w-8 h-8 text-primary-foreground" />
           </div>
           <h2 className="font-display text-lg font-semibold text-foreground mb-2">
-            How can we help?
+            Vad behöver du hjälp med?
           </h2>
           <p className="text-sm text-muted-foreground">
-            Find answers to common questions or get in touch with our support team.
+            Vanliga frågor om GameRun.
           </p>
         </motion.div>
 
@@ -124,7 +124,7 @@ export default function HelpSupport() {
           className="mb-8"
         >
           <h3 className="font-display font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">
-            Frequently Asked Questions
+            Vanliga frågor
           </h3>
           <div className="space-y-3">
             {faqs.map((faq, index) => (
@@ -210,7 +210,7 @@ export default function HelpSupport() {
           transition={{ delay: 0.5 }}
           className="text-center text-xs text-muted-foreground mt-8"
         >
-          GameRun v1.0.0 • Made with ❤️ for active families
+          GameRun v1.0.0
         </motion.p>
       </main>
     </div>

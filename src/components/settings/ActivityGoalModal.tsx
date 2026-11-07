@@ -24,7 +24,7 @@ export function ActivityGoalModal({ open, onOpenChange, currentGoal, onSave }: A
   const handleSave = () => {
     onSave(goal);
     toast.success("Activity goal updated!", {
-      description: `Your daily step goal is now ${goal.toLocaleString()} steps.`,
+      description: `Ditt dagliga stegmål är nu ${goal.toLocaleString("sv-SE")} steg.`,
     });
     onOpenChange(false);
   };
@@ -35,7 +35,7 @@ export function ActivityGoalModal({ open, onOpenChange, currentGoal, onSave }: A
         <DialogHeader>
           <DialogTitle className="font-display text-center flex items-center justify-center gap-2">
             <Target className="w-5 h-5 text-primary" />
-            Set Daily Step Goal
+            Ändra dagligt stegmål
           </DialogTitle>
         </DialogHeader>
 
@@ -57,9 +57,9 @@ export function ActivityGoalModal({ open, onOpenChange, currentGoal, onSave }: A
                 animate={{ scale: 1 }}
                 className="text-4xl font-bold text-primary"
               >
-                {goal.toLocaleString()}
+                {goal.toLocaleString("sv-SE")}
               </motion.p>
-              <p className="text-sm text-muted-foreground">steps per day</p>
+              <p className="text-sm text-muted-foreground">steg per dag</p>
             </div>
             <motion.button
               whileHover={{ scale: 1.1 }}
@@ -96,7 +96,7 @@ export function ActivityGoalModal({ open, onOpenChange, currentGoal, onSave }: A
           </p>
 
           <Button onClick={handleSave} className="w-full gradient-activity">
-            Save Goal
+            Spara mål
           </Button>
         </div>
       </DialogContent>

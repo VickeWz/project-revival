@@ -105,12 +105,12 @@ export default function AlwaysAllowed() {
 
     if (error) {
       if (error.code === "23505") {
-        toast.error("This app is already in the always allowed list");
+        toast.error("Appen finns redan i listan");
       } else {
-        toast.error("Failed to add app");
+        toast.error("Kunde inte lägga till appen");
       }
     } else {
-      toast.success(`Added ${appName} to always allowed`);
+      toast.success(`${appName} tillagd i alltid tillåtna`);
       fetchAllowedApps();
       setShowAddDialog(false);
     }
@@ -123,9 +123,9 @@ export default function AlwaysAllowed() {
       .eq("id", id);
 
     if (error) {
-      toast.error("Failed to remove app");
+      toast.error("Kunde inte ta bort appen");
     } else {
-      toast.success(`Removed ${name} from always allowed`);
+      toast.success(`${name} borttagen från alltid tillåtna`);
       setAllowedApps(prev => prev.filter(a => a.id !== id));
     }
   };
@@ -153,13 +153,13 @@ export default function AlwaysAllowed() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="font-display font-bold text-xl text-foreground">Always Allowed</h1>
+              <h1 className="font-display font-bold text-xl text-foreground">Alltid tillåtna</h1>
               {childName && <p className="text-sm text-muted-foreground">{childName}</p>}
             </div>
           </div>
           <Button onClick={() => setShowAddDialog(true)} size="sm">
             <Plus className="w-4 h-4 mr-1" />
-            Add
+            Lägg till
           </Button>
         </div>
       </header>
@@ -172,11 +172,11 @@ export default function AlwaysAllowed() {
             className="text-center py-12 bg-card rounded-2xl"
           >
             <BookOpen className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="font-display font-bold text-lg text-foreground mb-2">No Apps Set</h3>
+            <h3 className="font-display font-bold text-lg text-foreground mb-2">Inga appar tillagda</h3>
             <p className="text-muted-foreground mb-6">Add apps that are always available, even during downtime</p>
             <Button onClick={() => setShowAddDialog(true)}>
               <Plus className="w-4 h-4 mr-2" />
-              Add App
+              Lägg till app
             </Button>
           </motion.div>
         ) : (
@@ -230,7 +230,7 @@ export default function AlwaysAllowed() {
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent className="max-w-sm bg-card border-border">
           <DialogHeader>
-            <DialogTitle>Add Always Allowed App</DialogTitle>
+            <DialogTitle>Lägg till tillåten app</DialogTitle>
           </DialogHeader>
           <div className="max-h-80 overflow-y-auto">
             <div className="space-y-2">

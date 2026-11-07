@@ -7,10 +7,10 @@ export const Route = createFileRoute("/challenges")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { title: "Challenges — GameRun" },
-      { name: "description", content: "GameRun: challenges — earn screen time by staying active." },
-      { property: "og:title", content: "Challenges — GameRun" },
-      { property: "og:description", content: "Earn screen time by staying active with GameRun." },
+      { title: "Utmaningar — GameRun" },
+      { name: "description", content: "Utmaningar i GameRun. Följ verklig aktivitet och skärmtid från steg." },
+      { property: "og:title", content: "Utmaningar — GameRun" },
+      { property: "og:description", content: "Utmaningar i GameRun. Följ verklig aktivitet och skärmtid från steg." },
     ],
   }),
   component: () => (
