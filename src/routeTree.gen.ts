@@ -25,6 +25,8 @@ import { Route as ParentAddChildRouteImport } from './routes/parent.add-child'
 import { Route as ParentAlwaysAllowedRouteImport } from './routes/parent.always-allowed'
 import { Route as ParentAppLimitsRouteImport } from './routes/parent.app-limits'
 import { Route as ParentDowntimeRouteImport } from './routes/parent.downtime'
+import { Route as ApiPublicNativeActivitySummaryRouteImport } from './routes/api/public/native/activity-summary'
+import { Route as ApiPublicNativeLinkChildRouteImport } from './routes/api/public/native/link-child'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -106,6 +108,18 @@ const ParentDowntimeRoute = ParentDowntimeRouteImport.update({
   path: '/parent/downtime',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicNativeActivitySummaryRoute =
+  ApiPublicNativeActivitySummaryRouteImport.update({
+    id: '/api/public/native/activity-summary',
+    path: '/api/public/native/activity-summary',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicNativeLinkChildRoute =
+  ApiPublicNativeLinkChildRouteImport.update({
+    id: '/api/public/native/link-child',
+    path: '/api/public/native/link-child',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -124,6 +138,8 @@ export interface FileRoutesByFullPath {
   '/parent/app-limits': typeof ParentAppLimitsRoute
   '/parent/downtime': typeof ParentDowntimeRoute
   '/parent/': typeof ParentIndexRoute
+  '/api/public/native/activity-summary': typeof ApiPublicNativeActivitySummaryRoute
+  '/api/public/native/link-child': typeof ApiPublicNativeLinkChildRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -142,6 +158,8 @@ export interface FileRoutesByTo {
   '/parent/app-limits': typeof ParentAppLimitsRoute
   '/parent/downtime': typeof ParentDowntimeRoute
   '/parent': typeof ParentIndexRoute
+  '/api/public/native/activity-summary': typeof ApiPublicNativeActivitySummaryRoute
+  '/api/public/native/link-child': typeof ApiPublicNativeLinkChildRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -161,6 +179,8 @@ export interface FileRoutesById {
   '/parent/app-limits': typeof ParentAppLimitsRoute
   '/parent/downtime': typeof ParentDowntimeRoute
   '/parent/': typeof ParentIndexRoute
+  '/api/public/native/activity-summary': typeof ApiPublicNativeActivitySummaryRoute
+  '/api/public/native/link-child': typeof ApiPublicNativeLinkChildRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -181,6 +201,8 @@ export interface FileRouteTypes {
     | '/parent/app-limits'
     | '/parent/downtime'
     | '/parent/'
+    | '/api/public/native/activity-summary'
+    | '/api/public/native/link-child'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -199,6 +221,8 @@ export interface FileRouteTypes {
     | '/parent/app-limits'
     | '/parent/downtime'
     | '/parent'
+    | '/api/public/native/activity-summary'
+    | '/api/public/native/link-child'
   id:
     | '__root__'
     | '/'
@@ -217,6 +241,8 @@ export interface FileRouteTypes {
     | '/parent/app-limits'
     | '/parent/downtime'
     | '/parent/'
+    | '/api/public/native/activity-summary'
+    | '/api/public/native/link-child'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -236,6 +262,8 @@ export interface RootRouteChildren {
   ParentAppLimitsRoute: typeof ParentAppLimitsRoute
   ParentDowntimeRoute: typeof ParentDowntimeRoute
   ParentIndexRoute: typeof ParentIndexRoute
+  ApiPublicNativeActivitySummaryRoute: typeof ApiPublicNativeActivitySummaryRoute
+  ApiPublicNativeLinkChildRoute: typeof ApiPublicNativeLinkChildRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -352,6 +380,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ParentDowntimeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/native/activity-summary': {
+      id: '/api/public/native/activity-summary'
+      path: '/api/public/native/activity-summary'
+      fullPath: '/api/public/native/activity-summary'
+      preLoaderRoute: typeof ApiPublicNativeActivitySummaryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/native/link-child': {
+      id: '/api/public/native/link-child'
+      path: '/api/public/native/link-child'
+      fullPath: '/api/public/native/link-child'
+      preLoaderRoute: typeof ApiPublicNativeLinkChildRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -372,6 +414,8 @@ const rootRouteChildren: RootRouteChildren = {
   ParentAppLimitsRoute: ParentAppLimitsRoute,
   ParentDowntimeRoute: ParentDowntimeRoute,
   ParentIndexRoute: ParentIndexRoute,
+  ApiPublicNativeActivitySummaryRoute: ApiPublicNativeActivitySummaryRoute,
+  ApiPublicNativeLinkChildRoute: ApiPublicNativeLinkChildRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -30,3 +30,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Bundled iPhone app build
+native-dist
+src/native/routeTree.gen.js
