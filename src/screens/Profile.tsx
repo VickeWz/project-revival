@@ -193,9 +193,8 @@ const Profile = () => {
                     {profile?.display_name?.charAt(0).toUpperCase() || "U"}
                   </motion.div>
                 </div>
-                </div>
                 <div className="flex-1">
-                  <h1 className="font-display text-2xl font-bold text-foreground">{profile?.display_name || "User"}</h1>
+                  <h1 className="font-display text-2xl font-bold text-foreground">{profile?.display_name || "Användare"}</h1>
                   <p className="text-muted-foreground text-sm">
                     @{profile?.display_name?.toLowerCase().replace(/\s/g, "") || "user"}
                   </p>
