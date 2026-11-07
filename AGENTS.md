@@ -39,3 +39,5 @@ use the editor.
 - Live pass display uses the local Capacitor Core Motion plugin with session-scoped cumulative readings and HealthKit fallback; final credit stays HealthKit-based. Why: faster sensor updates must not double-count sources or change reward accounting.
 
 - Home activity displays use actual HealthKit readings with an explicit unavailable state; unsupported social, bonus, usage and device-blocking controls must not impersonate connected features. Why: live progress must remain distinguishable from saved balances and unavailable measurements.
+- Screen-time redemption uses authenticated idempotent transactions and device-bound absolute expiry; only the native monitor extension restores shields, never a JavaScript timer. Why: balance debits survive retries and enforcement must outlive the app process.
+- Screen Time app selection stays on-device in a shared App Group and requires guardian authorization; the app and monitor compile the same state helper. Why: Apple's opaque selections must not leave the device or diverge between processes.

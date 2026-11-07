@@ -1,5 +1,5 @@
 // @ts-nocheck -- imported code written for a looser TypeScript config
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ChildCard } from "@/components/ChildCard";
@@ -48,6 +48,7 @@ export default function ParentDashboard() {
   const [processingRequest, setProcessingRequest] = useState<string | null>(null);
   const [editingMinutes, setEditingMinutes] = useState<Record<string, number>>({});
   const [activeTab, setActiveTab] = useState<"home" | "screentime">("home");
+  const grantIds = useRef<Record<string, string>>({});
   const { profile, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -185,32 +186,14 @@ export default function ParentDashboard() {
     const minutesToGrant = editingMinutes[request.id] ?? request.requestedMinutes;
     
     try {
-      // Update request status
-      const { error: updateError } = await supabase
-        .from("screen_time_requests")
-        .update({ status: "accepted", responded_at: new Date().toISOString() })
-        .eq("id", request.id);
-
-      if (updateError) throw updateError;
-
-      // Grant screen time
-      const { data: balance } = await supabase
-        .from("screen_time_balance")
-        .select("minutes_remaining")
-        .eq("user_id", request.childId)
-        .maybeSingle();
-
-      const currentMinutes = balance?.minutes_remaining || 0;
-
-      const { error: balanceError } = await supabase
-        .from("screen_time_balance")
-        .upsert({
-          user_id: request.childId,
-          minutes_remaining: currentMinutes + minutesToGrant,
-          last_updated: new Date().toISOString(),
-        }, { onConflict: "user_id" });
-
-      if (balanceError) throw balanceError;
+      const key = `request:${request.id}`;
+      grantIds.current[key] ??= crypto.randomUUID();
+      const { error } = await supabase.rpc("grant_screen_time", {
+        p_id: grantIds.current[key], p_child_id: request.childId,
+        p_minutes: minutesToGrant, p_request_id: request.id,
+      });
+      if (error) throw error;
+      delete grantIds.current[key];
 
       toast.success(`Godkänt ${minutesToGrant} minuter för ${request.childName}!`);
       setRequests(prev => prev.filter(r => r.id !== request.id));
@@ -256,23 +239,13 @@ export default function ParentDashboard() {
 
   const handleGrantTime = async (childId: string, childName: string) => {
     try {
-      const { data: balance } = await supabase
-        .from("screen_time_balance")
-        .select("minutes_remaining")
-        .eq("user_id", childId)
-        .maybeSingle();
-
-      const currentMinutes = balance?.minutes_remaining || 0;
-
-      const { error } = await supabase
-        .from("screen_time_balance")
-        .upsert({
-          user_id: childId,
-          minutes_remaining: currentMinutes + 15,
-          last_updated: new Date().toISOString(),
-        }, { onConflict: "user_id" });
-
+      const key = `child:${childId}`;
+      grantIds.current[key] ??= crypto.randomUUID();
+      const { error } = await supabase.rpc("grant_screen_time", {
+        p_id: grantIds.current[key], p_child_id: childId, p_minutes: 15,
+      });
       if (error) throw error;
+      delete grantIds.current[key];
 
       toast.success(`Gett 15 minuter till ${childName}!`, {
         description: "Skärmtiden har lagts till på kontot.",
@@ -518,7 +491,7 @@ export default function ParentDashboard() {
                         ) : (
                           <>
                             <Check className="w-4 h-4 mr-1" />
-                            Approve {currentMinutes}m
+                            Godkänn {currentMinutes} min
                           </>
                         )}
                       </Button>

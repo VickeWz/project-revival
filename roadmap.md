@@ -1,3 +1,5 @@
+- [x] Lägg till Apples appval, blockering, intjänat saldo och tidsbegränsad aktivering med iOS-återblockering samt iPhone-testguide. 22 tester passerar; inloggad mobilvisning och nekade ogiltiga saldomutationer verifierade. Swift och faktisk återblockering återstår att verifiera på iPhone.
+- [ ] Verifiera skärmtidsblockering på fysisk iPhone. Blockerat: saknar Xcode, signering och fysisk iPhone; Apples distributionstillstånd krävs för TestFlight.
 - [x] Ta bort startsidans statistik, påhittade uppgifter och låtsasknappar; svenska texter och verklig hälsodata. 31 tester passerar; inloggad startsida, målval, profil och distansflik kontrollerade utan runtime-fel. Riktiga sensorer kräver iPhone.
 - [x] Lägg till lokal Core Motion-brygga, behörighetstexter och livevisning med Hälsa som reserv; 23 tester passerar och Capacitor hittar GameRunMotionPlugin. Inloggad passida öppnas utan runtime-fel; sensorer kräver iPhone.
 - [ ] Bygg och kör Core Motion på fysisk iPhone. Blockerat: Xcode-projektet finns inte här; miljön saknar macOS, Xcode och ansluten iPhone.

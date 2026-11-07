@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { ActivityRing } from "@/components/ActivityRing";
 import { BottomNav } from "@/components/BottomNav";
 import { ActivitySummary } from "@/components/home/ActivitySummary";
+import { ScreenTimeControl } from "@/components/ScreenTimeControl";
 import { Settings, Play, Target, RefreshCw } from "lucide-react";
 import { useNavigate } from "@/lib/router-compat";
 import { useAuth } from "@/hooks/useAuth";
@@ -69,6 +70,7 @@ export default function ChildDashboard() {
           </div>
         </section>
         <Button className="w-full h-12" onClick={() => navigate("/pass")}><Play className="w-4 h-4 mr-2" />Starta ett pass</Button>
+        <ScreenTimeControl />
         <ActivitySummary onSync={(data) => { setHealthData(data); setStatus("Synkat med Hälsa"); }} />
       </main>
       <BottomNav />

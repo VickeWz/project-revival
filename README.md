@@ -1,5 +1,11 @@
 # Welcome to your Lovable project
 
+## Skärmtid på iPhone
+
+Se [iPhone-guiden](docs/iphone-screen-time.md) för installation, Family Controls,
+App Groups, monitor-tillägg och test av intjänad tid och återblockering.
+Swift och verklig appblockering måste verifieras i Xcode på en fysisk iPhone.
+
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable
