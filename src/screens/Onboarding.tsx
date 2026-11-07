@@ -95,6 +95,7 @@ export default function Onboarding() {
 
       if (error) throw error;
       
+      await refreshProfile();
       toast.success("You're all set! Let's get moving!");
       navigate(profile.role === 'parent' ? '/parent' : '/child');
     } catch (error) {

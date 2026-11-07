@@ -1,6 +1,7 @@
 // @ts-nocheck -- imported code written for a looser TypeScript config
 // HealthKit Service for iOS native integration
 // Uses the Capacitor 8-compatible Health plugin for real device data
+import { screenTimeFromSteps } from '@/lib/screen-time';
 import { Capacitor } from '@capacitor/core';
 import { Health, type HealthDataType } from '@capgo/capacitor-health';
 
@@ -182,17 +183,9 @@ class HealthKitService {
 
   // Calculate screen time earned based on activity
   calculateScreenTimeEarned(data: HealthData): number {
-    // 1 minute of screen time per 100 steps
-    const stepsMinutes = Math.floor(data.steps / 100);
-    
-    // 2 minutes of screen time per active minute
-    const activeMinutes = data.activeMinutes * 2;
-    
-    // 1 minute per 500 meters walked
-    const distanceMinutes = Math.floor(data.distance / 500);
-    
-    return stepsMinutes + activeMinutes + distanceMinutes;
+    return screenTimeFromSteps(data.steps);
   }
+
 
   isAvailable(): boolean {
     return this.isNative;
