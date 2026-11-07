@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Users, User, ArrowLeft, Zap } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 type UserType = 'parent' | 'child' | null;
 type AuthMode = 'signup' | 'signin';
@@ -67,6 +68,21 @@ export default function Login() {
     } catch {
       setIsLoading(false);
     }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast.error('Enter your email first.');
+      return;
+    }
+    const origin = window.location.origin.startsWith('http')
+      ? window.location.origin
+      : 'https://second-life-project-archive.lovable.app';
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${origin}/reset-password`,
+    });
+    if (error) toast.error(error.message);
+    else toast.success('Check your email for a link to reset your password.');
   };
 
   const handleSwitchToSignIn = () => {
@@ -225,6 +241,13 @@ export default function Login() {
               >
                 {isLoading ? 'Signing in...' : 'Sign In'}
               </Button>
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="w-full text-center text-sm text-primary hover:underline"
+              >
+                Forgot password?
+              </button>
             </form>
 
             <p className="text-center text-sm text-muted-foreground mt-6">
