@@ -36,6 +36,13 @@
       "when": 1794086987745,
       "tag": "0004_redeem_earned_screen_time",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794087160846,
+      "tag": "0005_atomic_parent_screen_time_grants",
+      "breakpoints": true
     }
   ]
 }

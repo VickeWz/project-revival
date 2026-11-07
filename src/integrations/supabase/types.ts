@@ -335,6 +335,55 @@ export type Database = {
           },
         ]
       }
+      screen_time_grants: {
+        Row: {
+          child_id: string
+          created_at: string
+          id: string
+          minutes: number
+          parent_id: string
+          request_id: string | null
+        }
+        Insert: {
+          child_id: string
+          created_at?: string
+          id: string
+          minutes: number
+          parent_id: string
+          request_id?: string | null
+        }
+        Update: {
+          child_id?: string
+          created_at?: string
+          id?: string
+          minutes?: number
+          parent_id?: string
+          request_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "screen_time_grants_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "screen_time_grants_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "screen_time_grants_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: true
+            referencedRelation: "screen_time_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       screen_time_requests: {
         Row: {
           child_id: string
@@ -434,6 +483,15 @@ export type Database = {
           p_steps: number
         }
         Returns: Json
+      }
+      grant_screen_time: {
+        Args: {
+          p_child_id: string
+          p_id: string
+          p_minutes: number
+          p_request_id?: string
+        }
+        Returns: number
       }
       is_child_of_profile: { Args: { profile_id: string }; Returns: boolean }
       is_parent_of_profile: { Args: { profile_id: string }; Returns: boolean }
