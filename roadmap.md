@@ -1,3 +1,5 @@
+- [x] Uppdatera aktivt pass varje sekund, visa distans i önskade intervall och tjäna 1 minut per 200 steg; 23 relevanta tester passerar och sparregeln är verifierad i databasen.
+- [ ] Verifiera varje fotsteg och distans på iPhone. Blockerat: HealthKit levererar steg i omgångar; exakt fotstegsvis uppdatering kräver en separat iPhone-rörelsemätare och en fysisk iPhone för test.
 - [x] Uppdatera Hälsa-data löpande på startsidan och under pass.
 - [x] Beräkna och spara passets skärmtid från steg, inte sträcka.
 - [x] Automatiska tester av synkning, omräkning och återförsök passerar.

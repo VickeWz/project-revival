@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Play, Square, Footprints, Clock, Tv, AlertTriangle, Timer, ChevronRight, History, Settings, Info } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { formatPassDistance, stepsToNextMinute } from "@/lib/pass-metrics";
+import { ArrowLeft, Play, Square, Footprints, Ruler, Clock, Tv, AlertTriangle, Timer, ChevronRight, History, Settings, Info } from "lucide-react";
 import { useNavigate, Link } from "@/lib/router-compat";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -109,6 +111,7 @@ export default function Pass() {
       () => healthKitService.getPassData(session.startTime),
       (data) => { if (!endingRef.current) { setPassData(data); setSyncError(false); } },
       () => setSyncError(true),
+      1000,
     );
   }, [isActive, session, saving]);
 
@@ -247,35 +250,52 @@ export default function Pass() {
           </motion.div>
 
           {syncError && <p role="status" className="text-sm text-destructive mb-4">Apple Health could not sync. Retrying…</p>}
-          <div className="grid grid-cols-2 gap-4 mb-8">
+          <Tabs defaultValue="steps" className="mb-8">
+            <TabsList className="grid grid-cols-2 w-full mb-4">
+              <TabsTrigger value="steps"><Footprints className="w-4 h-4 mr-2" />Steps</TabsTrigger>
+              <TabsTrigger value="distance"><Ruler className="w-4 h-4 mr-2" />Distance</TabsTrigger>
+            </TabsList>
+          <div className="grid grid-cols-2 gap-4">
+            <TabsContent value="steps" className="mt-0">
             <Card className="border-border/50">
               <CardContent className="p-4 text-center">
                 <Footprints className="w-6 h-6 mx-auto mb-2 text-primary" />
-                <p className="font-display font-bold text-2xl text-foreground">
+                <p aria-label="Steps this pass" className="font-display font-bold text-2xl text-foreground tabular-nums">
                   {passData.steps.toLocaleString()}
                 </p>
                 <p className="text-xs text-muted-foreground">Steps this pass</p>
               </CardContent>
             </Card>
+            </TabsContent>
+            <TabsContent value="distance" className="mt-0">
+              <Card className="border-border/50">
+                <CardContent className="p-4 text-center">
+                  <Ruler className="w-6 h-6 mx-auto mb-2 text-primary" />
+                  <p aria-label="Distance this pass" className="font-display font-bold text-2xl text-foreground tabular-nums">{formatPassDistance(passData.distance)}</p>
+                  <p className="text-xs text-muted-foreground">Distance this pass</p>
+                </CardContent>
+              </Card>
+            </TabsContent>
             <Card className="border-border/50">
               <CardContent className="p-4 text-center">
                 <Tv className="w-6 h-6 mx-auto mb-2 text-secondary" />
-                <p className="font-display font-bold text-2xl text-foreground">{earnedMinutes}</p>
+                <p aria-label="Minutes earned" className="font-display font-bold text-2xl text-foreground tabular-nums">{earnedMinutes}</p>
                 <p className="text-xs text-muted-foreground">min earned</p>
               </CardContent>
             </Card>
           </div>
+          </Tabs>
 
           <Card className="mb-8 border-border/50">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Next 5 minutes in</span>
+                <span className="text-sm text-muted-foreground">Next minute in</span>
                 <span className="font-display font-bold text-foreground">
-                  {1000 - passData.steps % 1000} steps
+                  {stepsToNextMinute(passData.steps)} steps
                 </span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <motion.div className="h-full bg-primary" animate={{ width: `${(passData.steps % 1000) / 10}%` }} />
+                <motion.div className="h-full bg-primary" animate={{ width: `${(passData.steps % 200) / 2}%` }} />
               </div>
             </CardContent>
           </Card>
@@ -304,7 +324,7 @@ export default function Pass() {
           </motion.div>
 
           <div className="mt-8 text-center text-sm text-muted-foreground">
-            <p className="mb-1">1000 steps = 5 minutes screen time</p>
+            <p className="mb-1">200 steps = 1 minute screen time</p>
             <p>Apple Health may deliver new steps with a delay.</p>
           </div>
         </main>
@@ -483,7 +503,7 @@ export default function Pass() {
                 <h3 className="font-display font-semibold text-foreground">How It Works</h3>
               </div>
               <div className="space-y-2 text-sm text-muted-foreground">
-                <p>• <span className="text-foreground font-medium">1000 steps = 5 minutes</span> of screen time</p>
+                <p>• <span className="text-foreground font-medium">200 steps = 1 minute</span> of screen time</p>
                 <p>• A pass tracks your activity until you end it</p>
                 <p>• Walk, run, or explore to earn more time</p>
                 <p>• Use your balance anytime in Screentime</p>

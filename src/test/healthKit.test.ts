@@ -58,15 +58,30 @@ describe('Capacitor 8 HealthKit adapter', () => {
   });
 });
 describe('screen time rule', () => {
-  it('gives 5 minutes per full 1000 steps', () => {
-    expect(healthKitService.calculateScreenTimeEarned({ steps: 999, distance: 5000, activeMinutes: 30 })).toBe(0);
+  it('gives one minute per full 200 steps', () => {
+    expect(healthKitService.calculateScreenTimeEarned({ steps: 199, distance: 5000, activeMinutes: 30 })).toBe(0);
+    expect(healthKitService.calculateScreenTimeEarned({ steps: 200, distance: 0, activeMinutes: 0 })).toBe(1);
     expect(healthKitService.calculateScreenTimeEarned({ steps: 1000, distance: 0, activeMinutes: 0 })).toBe(5);
-    expect(healthKitService.calculateScreenTimeEarned({ steps: 12572, distance: 0, activeMinutes: 0 })).toBe(60);
+    expect(healthKitService.calculateScreenTimeEarned({ steps: 12572, distance: 0, activeMinutes: 0 })).toBe(62);
   });
 });
 
 describe('foreground HealthKit sync', () => {
   afterEach(() => vi.useRealTimers());
+
+  it('supports one-second pass refresh without inventing steps', async () => {
+    vi.useFakeTimers();
+    const read = vi.fn().mockResolvedValue({ steps: 199, distance: 100, activeMinutes: 1 });
+    const received: number[] = [];
+    const stop = healthKitService.watchData(read, (data) => received.push(data.steps), undefined, 1000);
+    await vi.advanceTimersByTimeAsync(0);
+    read.mockResolvedValue({ steps: 200, distance: 110, activeMinutes: 1 });
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(received).toEqual([199, 200]);
+    stop();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(read).toHaveBeenCalledTimes(2);
+  });
 
   it('replaces cumulative samples every three seconds without counting them twice', async () => {
     vi.useFakeTimers();

@@ -22,6 +22,13 @@
       "when": 1794067826254,
       "tag": "0002_save_step_pass_atomically",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1794077071045,
+      "tag": "0003_earn_each_screen_minute",
+      "breakpoints": true
     }
   ]
 }

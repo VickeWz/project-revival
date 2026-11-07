@@ -3,6 +3,7 @@
 // Uses the Capacitor 8-compatible Health plugin for real device data
 import { Capacitor } from '@capacitor/core';
 import { Health, type HealthDataType } from '@capgo/capacitor-health';
+import { earnedScreenMinutes } from '@/lib/pass-metrics';
 
 export interface HealthData {
   steps: number;
@@ -144,6 +145,7 @@ class HealthKitService {
     read: () => Promise<HealthData>,
     onData: (data: HealthData) => void,
     onError: (error: unknown) => void = () => {},
+    intervalMs = 3000,
   ): () => void {
     let stopped = false;
     let pending = false;
@@ -160,7 +162,7 @@ class HealthKitService {
       }
     };
     void update();
-    const interval = setInterval(() => void update(), 3000);
+    const interval = setInterval(() => void update(), intervalMs);
     document.addEventListener('visibilitychange', update);
     window.addEventListener('focus', update);
     return () => {
@@ -222,8 +224,7 @@ class HealthKitService {
 
   // Calculate screen time earned based on activity
   calculateScreenTimeEarned(data: HealthData): number {
-    // Every 1000 steps = 5 minutes of screen time
-    return Math.floor(Math.max(0, data.steps) / 1000) * 5;
+    return earnedScreenMinutes(data.steps);
   }
 
   isAvailable(): boolean {

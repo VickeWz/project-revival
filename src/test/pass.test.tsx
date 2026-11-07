@@ -14,7 +14,7 @@ vi.mock('@/integrations/supabase/client', () => ({ supabase: { from: () => mocks
 vi.mock('@/services/healthKit', () => ({ healthKitService: {
   requestAuthorization: async () => true,
   getPassData: mocks.getPassData,
-  calculateScreenTimeEarned: (data: { steps: number }) => Math.floor(data.steps / 1000) * 5,
+  calculateScreenTimeEarned: (data: { steps: number }) => Math.floor(data.steps / 200),
   watchData: (_read: unknown, onData: typeof mocks.onData) => { mocks.onData = onData; return () => {}; },
 } }));
 
@@ -31,6 +31,34 @@ beforeEach(() => {
   mocks.query.mockReturnValue(chain);
 });
 afterEach(cleanup);
+
+it('updates each received step and earned minute while the pass stays active', async () => {
+  render(<Pass />);
+  fireEvent.click(screen.getByText('Start Pass'));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Start Pass' })).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', { name: 'Start Pass' }));
+  await screen.findByRole('button', { name: 'End Pass' });
+  const { act } = await import('@testing-library/react');
+  const samples: Array<[number, number]> = [[199, 0], [200, 1], [201, 1], [400, 2]];
+  for (const [steps, minutes] of samples) {
+    act(() => mocks.onData?.({ steps, distance: 110, activeMinutes: 1 }));
+    expect(screen.getByLabelText('Steps this pass')).toHaveTextContent(String(steps));
+    expect(screen.getByLabelText('Minutes earned')).toHaveTextContent(String(minutes));
+  }
+  expect(mocks.rpc).not.toHaveBeenCalled();
+});
+
+it('saves one minute for a 200-step pass', async () => {
+  mocks.getPassData.mockResolvedValue({ steps: 200, distance: 110, activeMinutes: 1 });
+  mocks.rpc.mockResolvedValue({ data: { earned_minutes: 1, balance: 11 }, error: null });
+  render(<Pass />);
+  fireEvent.click(screen.getByText('Start Pass'));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Start Pass' })).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', { name: 'Start Pass' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'End Pass' }));
+  await screen.findByText('11m');
+  expect(mocks.rpc).toHaveBeenCalledWith('complete_step_pass', expect.objectContaining({ p_steps: 200 }));
+});
 
 it('shows session steps and credits 5 minutes from the final 1000-step read', async () => {
   mocks.getPassData.mockResolvedValue({ steps: 1000, distance: 700, activeMinutes: 10 });
