@@ -1,3 +1,4 @@
+- [ ] Ta bort startsidans statistik, påhittade uppgifter och låtsasknappar; översätt appens texter till svenska och kontrollera flödena.
 - [x] Lägg till lokal Core Motion-brygga, behörighetstexter och livevisning med Hälsa som reserv; 23 tester passerar och Capacitor hittar GameRunMotionPlugin. Inloggad passida öppnas utan runtime-fel; sensorer kräver iPhone.
 - [ ] Bygg och kör Core Motion på fysisk iPhone. Blockerat: Xcode-projektet finns inte här; miljön saknar macOS, Xcode och ansluten iPhone.
 - [x] Uppdatera aktivt pass varje sekund, visa distans i önskade intervall och tjäna 1 minut per 200 steg; 23 relevanta tester passerar och sparregeln är verifierad i databasen.
