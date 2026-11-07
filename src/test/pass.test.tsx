@@ -20,6 +20,10 @@ vi.mock('@/services/healthKit', () => ({ healthKitService: {
 
 import Pass from '@/screens/Pass';
 
+vi.mock('@/services/passTracking', () => ({
+  watchPassData: (_session: unknown, onData: typeof mocks.onData) => { mocks.onData = onData; return () => {}; },
+}));
+
 beforeEach(() => {
   vi.clearAllMocks();
   const chain = { select: vi.fn(), eq: vi.fn(), order: vi.fn(), limit: vi.fn(), maybeSingle: vi.fn() };

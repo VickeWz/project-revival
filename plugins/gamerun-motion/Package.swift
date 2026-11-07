@@ -2,9 +2,9 @@
 import PackageDescription
 
 let package = Package(
-    name: "GameRunMotion",
+    name: "GamerunCapacitorMotion",
     platforms: [.iOS(.v15)],
-    products: [.library(name: "GameRunMotion", targets: ["GameRunMotionPlugin"])],
+    products: [.library(name: "GamerunCapacitorMotion", targets: ["GameRunMotionPlugin"])],
     dependencies: [.package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", from: "8.0.0")],
     targets: [.target(
         name: "GameRunMotionPlugin",

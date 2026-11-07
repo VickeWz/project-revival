@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "description": "GameRun iOS Core Motion pedometer bridge",
   "license": "MIT",
+  "type": "module",
   "main": "index.js",
-  "files": ["index.js", "Package.swift", "GameRunMotion.podspec", "ios/Sources"],
+  "files": ["index.js", "Package.swift", "GamerunCapacitorMotion.podspec", "ios/Sources"],
   "peerDependencies": { "@capacitor/core": ">=8.0.0" },
   "capacitor": { "ios": { "src": "ios" } }
 }
