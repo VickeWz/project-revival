@@ -380,6 +380,44 @@ export type Database = {
           },
         ]
       }
+      screen_time_sessions: {
+        Row: {
+          balance_after: number
+          device_id: string
+          expires_at: string
+          id: string
+          minutes: number
+          profile_id: string
+          started_at: string
+        }
+        Insert: {
+          balance_after: number
+          device_id: string
+          expires_at: string
+          id: string
+          minutes: number
+          profile_id: string
+          started_at?: string
+        }
+        Update: {
+          balance_after?: number
+          device_id?: string
+          expires_at?: string
+          id?: string
+          minutes?: number
+          profile_id?: string
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "screen_time_sessions_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -400,6 +438,10 @@ export type Database = {
       is_child_of_profile: { Args: { profile_id: string }; Returns: boolean }
       is_parent_of_profile: { Args: { profile_id: string }; Returns: boolean }
       owns_profile: { Args: { profile_id: string }; Returns: boolean }
+      redeem_screen_time: {
+        Args: { p_device_id: string; p_id: string; p_minutes: number }
+        Returns: Json
+      }
     }
     Enums: {
       user_role: "parent" | "child"
