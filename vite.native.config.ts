@@ -21,7 +21,7 @@ function nativeSwaps(): Plugin {
     name: "gamerun-native-swaps",
     enforce: "pre",
     resolveId(id, importer) {
-      if (process.env.DBG && id.includes("routeTree")) console.log("RID", id, importer);
+      if (process.env.DBG && /start-server-core|react-start/.test(id)) console.log("RID", id, importer);
       if (swaps[id]) return swaps[id];
       if (id === "./routeTree.gen" && importer?.split("?")[0].endsWith(path.join("src", "router.tsx"))) return nativeTree;
       return null;
