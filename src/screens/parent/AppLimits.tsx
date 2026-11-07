@@ -118,12 +118,12 @@ export default function AppLimits() {
 
     if (error) {
       if (error.code === "23505") {
-        toast.error("This app already has a limit set");
+        toast.error("Appen har redan en gräns");
       } else {
-        toast.error("Failed to add app limit");
+        toast.error("Kunde inte lägga till appgränsen");
       }
     } else {
-      toast.success(`Added ${appName} limit`);
+      toast.success(`Gräns tillagd för ${appName}`);
       fetchLimits();
       setShowAddDialog(false);
     }
@@ -136,9 +136,9 @@ export default function AppLimits() {
       .eq("id", id);
 
     if (error) {
-      toast.error("Failed to remove app limit");
+      toast.error("Kunde inte ta bort appgränsen");
     } else {
-      toast.success(`Removed ${name} limit`);
+      toast.success(`Gräns borttagen för ${name}`);
       setLimits(prev => prev.filter(l => l.id !== id));
     }
   };
@@ -184,13 +184,13 @@ export default function AppLimits() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="font-display font-bold text-xl text-foreground">App Limits</h1>
+              <h1 className="font-display font-bold text-xl text-foreground">Appgränser</h1>
               {childName && <p className="text-sm text-muted-foreground">{childName}</p>}
             </div>
           </div>
           <Button onClick={() => setShowAddDialog(true)} size="sm">
             <Plus className="w-4 h-4 mr-1" />
-            Add
+            Lägg till
           </Button>
         </div>
       </header>
@@ -203,11 +203,11 @@ export default function AppLimits() {
             className="text-center py-12 bg-card rounded-2xl"
           >
             <Clock className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="font-display font-bold text-lg text-foreground mb-2">No App Limits Set</h3>
-            <p className="text-muted-foreground mb-6">Set daily time limits for specific apps</p>
+            <h3 className="font-display font-bold text-lg text-foreground mb-2">Inga appgränser sparade</h3>
+            <p className="text-muted-foreground mb-6">Spara önskade dagliga tidsgränser för appar</p>
             <Button onClick={() => setShowAddDialog(true)}>
               <Plus className="w-4 h-4 mr-2" />
-              Add App Limit
+              Lägg till appgräns
             </Button>
           </motion.div>
         ) : (
@@ -228,7 +228,7 @@ export default function AppLimits() {
                     </div>
                     <div className="flex-1">
                       <p className="font-medium text-foreground">{limit.app_name}</p>
-                      <p className="text-xs text-muted-foreground">{limit.category}</p>
+                      <p className="text-xs text-muted-foreground">{({"Games": "Spel", "Entertainment": "Underhållning", "Social": "Socialt", "Productivity": "Produktivitet", "Communication": "Kommunikation", "Utilities": "Verktyg", "Health": "Hälsa", "Education": "Utbildning"} as Record<string, string>)[limit.category] ?? limit.category}</p>
                     </div>
                     <Button
                       variant="ghost"
@@ -241,7 +241,7 @@ export default function AppLimits() {
                   </div>
                   
                   <div className="flex items-center justify-between bg-muted/30 rounded-lg p-2">
-                    <span className="text-sm text-muted-foreground">Daily limit:</span>
+                    <span className="text-sm text-muted-foreground">Daglig gräns:</span>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleUpdateLimit(limit.id, limit.daily_limit_minutes - 15)}
@@ -273,10 +273,7 @@ export default function AppLimits() {
           transition={{ delay: 0.3 }}
           className="bg-muted/30 rounded-2xl p-4 mt-6"
         >
-          <p className="text-sm text-muted-foreground">
-            When the daily limit is reached, the app will be blocked until the next day. 
-            Activity earned screen time does not affect these limits.
-          </p>
+          <p className="text-sm text-muted-foreground">Dina val sparas på kontot. Blockering av andra appar på iPhone är inte ansluten ännu.</p>
         </motion.div>
       </main>
 
@@ -284,7 +281,7 @@ export default function AppLimits() {
       <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
         <DialogContent className="max-w-sm bg-card border-border">
           <DialogHeader>
-            <DialogTitle>Add App Limit</DialogTitle>
+            <DialogTitle>Lägg till appgräns</DialogTitle>
           </DialogHeader>
           <div className="max-h-80 overflow-y-auto">
             <div className="space-y-2">
@@ -299,7 +296,7 @@ export default function AppLimits() {
                   </div>
                   <div>
                     <p className="font-medium text-foreground">{app.name}</p>
-                    <p className="text-xs text-muted-foreground">{app.category}</p>
+                    <p className="text-xs text-muted-foreground">{({"Games": "Spel", "Entertainment": "Underhållning", "Social": "Socialt", "Productivity": "Produktivitet", "Communication": "Kommunikation", "Utilities": "Verktyg", "Health": "Hälsa", "Education": "Utbildning"} as Record<string, string>)[app.category] ?? app.category}</p>
                   </div>
                 </button>
               ))}

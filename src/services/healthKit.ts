@@ -175,10 +175,7 @@ class HealthKitService {
 
   async getDistanceSince(startDate: Date): Promise<number> {
     if (!this.isNative) {
-      // Return mock data for web preview - simulate walking
-      const elapsedSeconds = (Date.now() - startDate.getTime()) / 1000;
-      // Simulate ~1.5 m/s walking speed with some randomness
-      return Math.floor(elapsedSeconds * 1.5 * (0.8 + Math.random() * 0.4));
+      throw new Error('Hälsa är endast tillgängligt på iPhone.');
     }
 
     try {
@@ -233,23 +230,11 @@ class HealthKitService {
 
   // Get weekly data for stats
   async getWeeklyData(): Promise<DailyHealthData[]> {
-    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const days = ['sön', 'mån', 'tis', 'ons', 'tor', 'fre', 'lör'];
     const result: DailyHealthData[] = [];
     
     if (!this.isNative) {
-      // Return mock data for web preview
-      const today = new Date();
-      for (let i = 6; i >= 0; i--) {
-        const date = new Date(today);
-        date.setDate(date.getDate() - i);
-        result.push({
-          day: days[date.getDay()],
-          steps: Math.floor(Math.random() * 15000) + 3000,
-          distance: Math.floor(Math.random() * 10) + 2,
-          screenTime: Math.floor(Math.random() * 80) + 20,
-        });
-      }
-      return result;
+      return [];
     }
 
     try {

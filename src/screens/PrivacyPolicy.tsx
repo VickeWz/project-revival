@@ -9,52 +9,52 @@ export default function PrivacyPolicy() {
   const sections = [
     {
       icon: <Database className="w-5 h-5" />,
-      title: "Data We Collect",
+      title: "Uppgifter som används",
       content: [
-        "Activity data (steps, distance, active minutes) from your device's health services",
-        "Account information (email, display name) for authentication",
-        "Screen time balances and activity logs",
-        "Parent-child relationship data for family linking",
+        "Steg, distans och aktivitetsminuter från Hälsa och rörelsesensorn",
+        "E-postadress och namn för ditt konto",
+        "Skärmtidssaldo och sparad aktivitet",
+        "Kopplingar mellan föräldrar och barn",
       ],
     },
     {
       icon: <Lock className="w-5 h-5" />,
-      title: "How We Protect Your Data",
+      title: "Skydd för dina uppgifter",
       content: [
-        "All data is encrypted in transit and at rest",
-        "Secure authentication with industry-standard protocols",
-        "Row-level security ensures users only access their own data",
-        "Regular security audits and updates",
+        "Uppgifterna skickas genom krypterade anslutningar",
+        "Inloggning skyddar ditt konto",
+        "Åtkomstregler skyddar kontots uppgifter och familjekopplingar",
+        "",
       ],
     },
     {
       icon: <Eye className="w-5 h-5" />,
-      title: "How We Use Your Data",
+      title: "Så används uppgifterna",
       content: [
-        "To track and reward physical activity with screen time",
-        "To enable parent-child account linking and oversight",
-        "To power challenges and leaderboards",
-        "To improve app performance and features",
+        "För att omvandla fysisk aktivitet till skärmtid",
+        "För att koppla barn och föräldrar",
+        "",
+        "För appens funktioner",
       ],
     },
     {
       icon: <UserCheck className="w-5 h-5" />,
-      title: "Your Rights",
+      title: "Dina val",
       content: [
-        "Access your data anytime through your profile",
-        "Request deletion of your account and all associated data",
-        "Opt out of notifications at any time",
-        "Control HealthKit permissions through device settings",
+        "Se ditt konto och din sparade aktivitet i appen",
+        "",
+        "",
+        "Hantera åtkomst till Hälsa i iPhones inställningar",
       ],
     },
     {
       icon: <Shield className="w-5 h-5" />,
-      title: "Children's Privacy",
+      title: "Barns uppgifter",
       content: [
-        "We comply with COPPA (Children's Online Privacy Protection Act)",
-        "Parental consent is required for accounts under 13",
-        "Parents can view, manage, and delete their child's data",
-        "We never sell children's data to third parties",
+        "Barnets hälsouppgifter används för aktivitet och skärmtid.",
+        "",
+        "Kopplade föräldrar kan se barnets sparade aktivitet och hantera skärmtidsförfrågningar.",
+        "AI-sammanfattningen använder bara dagens stegantal.",
       ],
     },
   ];
@@ -67,7 +67,7 @@ export default function PrivacyPolicy() {
           <Button variant="ghost" size="icon" onClick={() => navigate("/settings")}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="font-display font-bold text-xl text-foreground">Privacy Policy</h1>
+          <h1 className="font-display font-bold text-xl text-foreground">Integritet</h1>
         </div>
       </header>
 
@@ -82,11 +82,11 @@ export default function PrivacyPolicy() {
             <Shield className="w-8 h-8 text-primary-foreground" />
           </div>
           <h2 className="font-display text-lg font-semibold text-foreground mb-2">
-            Your Privacy Matters
+            Din integritet
           </h2>
           <p className="text-sm text-muted-foreground">
-            GameRun is committed to protecting your personal information. 
-            This policy explains how we collect, use, and safeguard your data.
+            Här beskriver vi vilka uppgifter GameRun använder. 
+            
           </p>
         </motion.div>
 
@@ -107,7 +107,7 @@ export default function PrivacyPolicy() {
                 <h3 className="font-display font-semibold text-foreground">{section.title}</h3>
               </div>
               <ul className="space-y-2">
-                {section.content.map((item, i) => (
+                {section.content.filter(Boolean).map((item, i) => (
                   <li key={i} className="text-sm text-muted-foreground flex items-start gap-2">
                     <span className="text-primary mt-1">•</span>
                     {item}
@@ -118,29 +118,6 @@ export default function PrivacyPolicy() {
           ))}
         </div>
 
-        {/* Contact */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-          className="mt-8 bg-muted/30 rounded-2xl p-5 text-center"
-        >
-          <Mail className="w-6 h-6 mx-auto mb-2 text-primary" />
-          <p className="text-sm text-muted-foreground mb-1">Questions about your privacy?</p>
-          <a href="mailto:privacy@gamerun.app" className="text-primary font-medium text-sm">
-            privacy@gamerun.app
-          </a>
-        </motion.div>
-
-        {/* Last Updated */}
-        <motion.p
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.7 }}
-          className="text-center text-xs text-muted-foreground mt-8"
-        >
-          Last updated: January 2026
-        </motion.p>
       </main>
     </div>
   );

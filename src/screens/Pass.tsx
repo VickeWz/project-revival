@@ -127,7 +127,7 @@ export default function Pass() {
       const granted = await healthKitService.requestAuthorization();
       setHasPermission(granted);
       if (!granted) {
-        toast.error("Cannot start without HealthKit permission");
+        toast.error("Tillåt åtkomst till Hälsa för att starta.");
         return;
       }
     }
@@ -141,9 +141,9 @@ export default function Pass() {
     setSyncError(false);
     setElapsedSeconds(0);
     setIsActive(true);
-    toast.success("Pass started! Get moving!");
+    toast.success("Passet har startat!");
     } catch {
-      toast.error("Could not start pass. Please try again.");
+      toast.error("Kunde inte starta passet. Försök igen.");
     } finally {
       setStarting(false);
     }
@@ -175,8 +175,8 @@ export default function Pass() {
       const newBalance = result.balance;
 
       setScreenTimeBalance(newBalance);
-      toast.success(`Pass complete! Earned ${finalEarnedMinutes} minutes`, {
-        description: "View your updated balance in Screentime",
+      toast.success(`Passet är klart! Du tjänade ${finalEarnedMinutes} minuter`, {
+        description: "Se ditt uppdaterade saldo under Skärmtid",
       });
       setSession(null);
       setIsActive(false);
@@ -193,7 +193,7 @@ export default function Pass() {
       if (historyData) setPassHistory(historyData);
     } catch (error) {
       console.error("Error saving pass:", error);
-      toast.error("Failed to save pass data");
+      toast.error("Kunde inte spara passet");
     } finally {
       endingRef.current = false;
       setSaving(false);
@@ -222,7 +222,7 @@ export default function Pass() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex-1 text-center font-display font-bold text-xl text-foreground">
-              Activity Pass
+              Aktivitetspass
             </div>
             <div className="w-10" />
           </div>
@@ -237,7 +237,7 @@ export default function Pass() {
             >
               <AlertTriangle className="w-5 h-5 text-destructive" />
               <p className="text-sm text-destructive">
-                Apple Health is available only on iPhone. Allow step access in Settings.
+                Hälsa är endast tillgängligt på iPhone. Tillåt åtkomst till steg i Inställningar.
               </p>
             </motion.div>
           )}
@@ -246,24 +246,24 @@ export default function Pass() {
             <div className="font-display font-bold text-6xl text-foreground mb-2">
               {formatTime(elapsedSeconds)}
             </div>
-            <p className="text-muted-foreground">{isActive ? "Pass Active" : "Ready to start"}</p>
+            <p className="text-muted-foreground">{isActive ? "Passet är aktivt" : "Redo att starta"}</p>
           </motion.div>
 
-          {syncError && <p role="status" className="text-sm text-destructive mb-4">Apple Health could not sync. Retrying…</p>}
+          {syncError && <p role="status" className="text-sm text-destructive mb-4">Kunde inte synka med Hälsa. Försöker igen…</p>}
           <Tabs defaultValue="steps" className="mb-8">
             <TabsList className="grid grid-cols-2 w-full mb-4">
-              <TabsTrigger value="steps"><Footprints className="w-4 h-4 mr-2" />Steps</TabsTrigger>
-              <TabsTrigger value="distance"><Ruler className="w-4 h-4 mr-2" />Distance</TabsTrigger>
+              <TabsTrigger value="steps"><Footprints className="w-4 h-4 mr-2" />Steg</TabsTrigger>
+              <TabsTrigger value="distance"><Ruler className="w-4 h-4 mr-2" />Distans</TabsTrigger>
             </TabsList>
           <div className="grid grid-cols-2 gap-4">
             <TabsContent value="steps" className="mt-0">
             <Card className="border-border/50">
               <CardContent className="p-4 text-center">
                 <Footprints className="w-6 h-6 mx-auto mb-2 text-primary" />
-                <p aria-label="Steps this pass" className="font-display font-bold text-2xl text-foreground tabular-nums">
-                  {passData.steps.toLocaleString()}
+                <p aria-label="Steg under passet" className="font-display font-bold text-2xl text-foreground tabular-nums">
+                  {passData.steps.toLocaleString("sv-SE")}
                 </p>
-                <p className="text-xs text-muted-foreground">Steps this pass</p>
+                <p className="text-xs text-muted-foreground">Steg under passet</p>
               </CardContent>
             </Card>
             </TabsContent>
@@ -271,16 +271,16 @@ export default function Pass() {
               <Card className="border-border/50">
                 <CardContent className="p-4 text-center">
                   <Ruler className="w-6 h-6 mx-auto mb-2 text-primary" />
-                  <p aria-label="Distance this pass" className="font-display font-bold text-2xl text-foreground tabular-nums">{formatPassDistance(passData.distance)}</p>
-                  <p className="text-xs text-muted-foreground">Distance this pass</p>
+                  <p aria-label="Distans under passet" className="font-display font-bold text-2xl text-foreground tabular-nums">{formatPassDistance(passData.distance)}</p>
+                  <p className="text-xs text-muted-foreground">Distans under passet</p>
                 </CardContent>
               </Card>
             </TabsContent>
             <Card className="border-border/50">
               <CardContent className="p-4 text-center">
                 <Tv className="w-6 h-6 mx-auto mb-2 text-secondary" />
-                <p aria-label="Minutes earned" className="font-display font-bold text-2xl text-foreground tabular-nums">{earnedMinutes}</p>
-                <p className="text-xs text-muted-foreground">min earned</p>
+                <p aria-label="Intjänade minuter" className="font-display font-bold text-2xl text-foreground tabular-nums">{earnedMinutes}</p>
+                <p className="text-xs text-muted-foreground">intjänade minuter</p>
               </CardContent>
             </Card>
           </div>
@@ -289,9 +289,9 @@ export default function Pass() {
           <Card className="mb-8 border-border/50">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Next minute in</span>
+                <span className="text-sm text-muted-foreground">Nästa minut om</span>
                 <span className="font-display font-bold text-foreground">
-                  {stepsToNextMinute(passData.steps)} steps
+                  {stepsToNextMinute(passData.steps)} steg
                 </span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -308,7 +308,7 @@ export default function Pass() {
                 className="w-full h-16 text-lg font-display font-bold gradient-hero"
               >
                 <Play className="w-6 h-6 mr-2" />
-                {starting ? "Starting…" : "Start Pass"}
+                {starting ? "Startar…" : "Starta pass"}
               </Button>
             ) : (
               <Button
@@ -318,14 +318,14 @@ export default function Pass() {
                 className="w-full h-16 text-lg font-display font-bold"
               >
                 <Square className="w-6 h-6 mr-2" />
-                {saving ? "Saving..." : "End Pass"}
+                {saving ? "Sparar…" : "Avsluta pass"}
               </Button>
             )}
           </motion.div>
 
           <div className="mt-8 text-center text-sm text-muted-foreground">
-            <p className="mb-1">200 steps = 1 minute screen time</p>
-            <p>Apple Health may deliver new steps with a delay.</p>
+            <p className="mb-1">200 steg = 1 minut skärmtid</p>
+            <p>Nya steg från Hälsa kan visas med fördröjning.</p>
           </div>
         </main>
       </div>
@@ -342,7 +342,7 @@ export default function Pass() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div className="flex-1 text-center font-display font-bold text-xl text-foreground">
-              Screen Time
+              Skärmtid
             </div>
             <div className="w-10" />
           </div>
@@ -361,7 +361,7 @@ export default function Pass() {
               transition={{ duration: 3, repeat: Infinity }}
             />
             <div className="relative">
-              <p className="text-muted-foreground text-sm mb-2">Available Balance</p>
+              <p className="text-muted-foreground text-sm mb-2">Tillgänglig skärmtid</p>
               <motion.p 
                 className="font-display font-bold text-5xl text-primary"
                 style={{ textShadow: '0 0 30px hsl(200 100% 50% / 0.5)' }}
@@ -371,53 +371,6 @@ export default function Pass() {
             </div>
           </motion.div>
 
-          {/* Custom Use Amount */}
-          <div className="mb-6">
-            <h3 className="font-display font-semibold text-lg text-foreground mb-3">Use Screen Time</h3>
-            <Card className="neon-border">
-              <CardContent className="p-4">
-                <div className="space-y-4">
-                  <div>
-                    <Label htmlFor="screentime-amount" className="text-muted-foreground text-sm mb-2 block">
-                      Enter minutes to use
-                    </Label>
-                    <div className="flex gap-3">
-                      <Input
-                        id="screentime-amount"
-                        type="number"
-                        min={1}
-                        max={screenTimeBalance}
-                        placeholder="e.g. 30"
-                        value={customScreenTime}
-                        onChange={(e) => setCustomScreenTime(e.target.value)}
-                        className="flex-1 bg-background/50 border-border/50 text-foreground text-lg font-display"
-                      />
-                      <span className="flex items-center text-muted-foreground">min</span>
-                    </div>
-                  </div>
-                  <Button
-                    className="w-full gradient-hero text-primary-foreground font-semibold"
-                    disabled={!customScreenTime || parseInt(customScreenTime) < 1 || parseInt(customScreenTime) > screenTimeBalance}
-                    onClick={() => {
-                      const mins = parseInt(customScreenTime);
-                      if (mins > 0 && mins <= screenTimeBalance) {
-                        toast.success(`Activated ${mins} minutes of screen time`);
-                        setScreenTimeBalance((prev) => prev - mins);
-                        setCustomScreenTime("");
-                      }
-                    }}
-                  >
-                    Activate Screen Time
-                  </Button>
-                  {screenTimeBalance === 0 && (
-                    <p className="text-xs text-muted-foreground text-center">
-                      No balance available. Start a Pass to earn more!
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
         </main>
 
         <BottomNav />
@@ -466,8 +419,8 @@ export default function Pass() {
               <div className="w-10 h-10 rounded-xl gradient-activity flex items-center justify-center mb-3 shadow-glow-primary">
                 <Play className="w-5 h-5 text-primary-foreground" />
               </div>
-              <p className="font-display font-bold text-foreground">Start Pass</p>
-              <p className="text-xs text-muted-foreground mt-1">Track activity & earn time</p>
+              <p className="font-display font-bold text-foreground">Starta pass</p>
+              <p className="text-xs text-muted-foreground mt-1">Följ aktivitet och tjäna tid</p>
             </div>
           </motion.button>
 
@@ -484,8 +437,8 @@ export default function Pass() {
               <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center mb-3 shadow-glow-secondary">
                 <Tv className="w-5 h-5 text-primary-foreground" />
               </div>
-              <p className="font-display font-bold text-foreground">Screentime</p>
-              <p className="text-xs text-muted-foreground mt-1">View & use your balance</p>
+              <p className="font-display font-bold text-foreground">Skärmtid</p>
+              <p className="text-xs text-muted-foreground mt-1">Se ditt saldo</p>
             </div>
           </motion.button>
         </div>
@@ -500,10 +453,10 @@ export default function Pass() {
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-3">
                 <Info className="w-4 h-4 text-primary" />
-                <h3 className="font-display font-semibold text-foreground">How It Works</h3>
+                <h3 className="font-display font-semibold text-foreground">Steg och skärmtid</h3>
               </div>
               <div className="space-y-2 text-sm text-muted-foreground">
-                <p>• <span className="text-foreground font-medium">200 steps = 1 minute</span> of screen time</p>
+                <p>• <span className="text-foreground font-medium">200 steg = 1 minut</span> skärmtid</p>
                 <p>• A pass tracks your activity until you end it</p>
                 <p>• Walk, run, or explore to earn more time</p>
                 <p>• Use your balance anytime in Screentime</p>
@@ -518,11 +471,11 @@ export default function Pass() {
           animate={{ opacity: 1, y: 0 }}
           className="mb-6"
         >
-          <h2 className="font-display font-semibold text-xl text-foreground mb-4">Earning Summary</h2>
+          <h2 className="font-display font-semibold text-xl text-foreground mb-4">Intjänad skärmtid</h2>
           <Card className="neon-border">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-muted-foreground">Today</span>
+                <span className="text-muted-foreground">Idag</span>
                 <span className="font-display font-bold text-foreground flex items-center gap-1">
                   <Timer className="w-4 h-4 text-primary" />
                   {passHistory
@@ -535,7 +488,7 @@ export default function Pass() {
                 className="w-full"
                 onClick={() => navigate("/child")}
               >
-                See latest stats
+                Se dagens aktivitet
               </Button>
             </CardContent>
           </Card>
@@ -547,27 +500,27 @@ export default function Pass() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <h2 className="font-display font-semibold text-xl text-foreground mb-4">Spending History</h2>
+          <h2 className="font-display font-semibold text-xl text-foreground mb-4">Sparad aktivitet</h2>
           <Card className="neon-border">
             <CardContent className="p-4">
               <div className="flex items-center justify-between mb-4">
-                <span className="text-muted-foreground">Passes</span>
+                <span className="text-muted-foreground">Aktivitet</span>
                 <div className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full bg-primary" />
                 </div>
               </div>
               
               {passHistory.length === 0 ? (
-                <p className="text-center text-muted-foreground py-4">No pass history yet</p>
+                <p className="text-center text-muted-foreground py-4">Ingen sparad aktivitet ännu</p>
               ) : (
                 <div className="space-y-3">
                   {passHistory.slice(0, 5).map((log) => (
                     <div key={log.id} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
                       <div>
-                        <p className="text-sm text-muted-foreground">{format(new Date(log.logged_at), "MMM d")}</p>
+                        <p className="text-sm text-muted-foreground">{new Date(log.logged_at).toLocaleDateString("sv-SE", { day: "numeric", month: "short" })}</p>
                       </div>
                       <p className="font-display font-bold text-foreground">
-                        -{log.screen_time_earned}m
+                        +{log.screen_time_earned} min
                       </p>
                     </div>
                   ))}

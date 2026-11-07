@@ -115,23 +115,23 @@ export default function Settings() {
         if (authorized) {
           setHealthKitEnabled(true);
           localStorage.setItem('healthkit_enabled', 'true');
-          toast.success('HealthKit enabled!', {
-            description: 'Your activity data will now be tracked.',
+          toast.success('Åtkomst till Hälsa begärd!', {
+            description: 'Dina hälsouppgifter kan nu hämtas.',
           });
         } else {
-          toast.error('HealthKit access denied', {
-            description: 'Please enable HealthKit in your device settings.',
+          toast.error('Ingen åtkomst till Hälsa', {
+            description: 'Tillåt Hälsa i iPhones inställningar.',
           });
         }
       } catch (error) {
-        toast.error('Failed to enable HealthKit', {
-          description: 'Please try again or check your device settings.',
+        toast.error('Kunde inte ansluta till Hälsa', {
+          description: 'Försök igen eller kontrollera iPhones inställningar.',
         });
       }
     } else {
       setHealthKitEnabled(false);
       localStorage.setItem('healthkit_enabled', 'false');
-      toast.success('HealthKit disabled');
+      toast.success('Hälsa är avstängt');
     }
   };
 
@@ -190,7 +190,7 @@ export default function Settings() {
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
             <ArrowLeft className="w-5 h-5" />
           </Button>
-          <h1 className="font-display font-bold text-xl text-foreground">Settings</h1>
+          <h1 className="font-display font-bold text-xl text-foreground">Inställningar</h1>
         </div>
       </header>
 
@@ -202,13 +202,13 @@ export default function Settings() {
           className="mb-8"
         >
           <h2 className="font-display font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">
-            Health & Activity
+            Hälsa och aktivitet
           </h2>
           <div className="space-y-3">
             <SettingItem
               icon={<Heart className="w-5 h-5" />}
-              title="HealthKit"
-              description={isHealthKitAvailable ? "Track steps, distance & activity" : "Only available on iOS devices"}
+              title="Hälsa"
+              description={isHealthKitAvailable ? "Hämta steg, distans och aktivitet" : "Endast tillgängligt på iPhone"}
               action={
                 <Switch
                   checked={healthKitEnabled}
@@ -219,122 +219,11 @@ export default function Settings() {
             />
             <SettingItem
               icon={<Target className="w-5 h-5" />}
-              title="Daily Step Goal"
-              description={`${dailyStepGoal.toLocaleString()} steps`}
+              title="Dagligt stegmål"
+              description={`${dailyStepGoal.toLocaleString("sv-SE")} steg`}
               onClick={() => setGoalModalOpen(true)}
             />
-            <SettingItem
-              icon={<Clock className="w-5 h-5" />}
-              title="Screen Time Ratio"
-              description="100m = 1 min (default)"
-              onClick={() => navigate("/settings")}
-            />
-            <SettingItem
-              icon={<MapPin className="w-5 h-5" />}
-              title="Location Access"
-              description="Enable location-based challenges"
-              action={
-                <Switch
-                  checked={locationEnabled}
-                  onCheckedChange={handleLocationToggle}
-                />
-              }
-            />
-          </div>
-        </motion.div>
-
-        {/* Notifications Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="mb-8"
-        >
-          <h2 className="font-display font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">
-            Notifications
-          </h2>
-          <div className="space-y-3">
-            <SettingItem
-              icon={<Bell className="w-5 h-5" />}
-              title="Push Notifications"
-              description="Master toggle for all alerts"
-              action={
-                <Switch
-                  checked={pushEnabled}
-                  onCheckedChange={handlePushToggle}
-                />
-              }
-            />
-            <SettingItem
-              icon={<Trophy className="w-5 h-5" />}
-              title="Challenge Alerts"
-              description="When challenges start or end"
-              action={
-                <Switch
-                  checked={challengeAlerts}
-                  onCheckedChange={(v) => handleNotificationPref('notif_challenges', v, setChallengeAlerts)}
-                  disabled={!pushEnabled}
-                />
-              }
-            />
-            <SettingItem
-              icon={<Zap className="w-5 h-5" />}
-              title="Daily Reminders"
-              description="Get moving reminders"
-              action={
-                <Switch
-                  checked={dailyReminders}
-                  onCheckedChange={(v) => handleNotificationPref('notif_reminders', v, setDailyReminders)}
-                  disabled={!pushEnabled}
-                />
-              }
-            />
-            <SettingItem
-              icon={<Activity className="w-5 h-5" />}
-              title="Friend Activity"
-              description="When friends complete challenges"
-              action={
-                <Switch
-                  checked={friendActivity}
-                  onCheckedChange={(v) => handleNotificationPref('notif_friends', v, setFriendActivity)}
-                  disabled={!pushEnabled}
-                />
-              }
-            />
-            <SettingItem
-              icon={<Clock className="w-5 h-5" />}
-              title="Screen Time Requests"
-              description="When parent responds to requests"
-              action={
-                <Switch
-                  checked={parentRequests}
-                  onCheckedChange={(v) => handleNotificationPref('notif_parent', v, setParentRequests)}
-                  disabled={!pushEnabled}
-                />
-              }
-            />
-          </div>
-        </motion.div>
-
-        {/* Appearance Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="mb-8"
-        >
-          <h2 className="font-display font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">
-            Appearance
-          </h2>
-          <div className="space-y-3">
-            <SettingItem
-              icon={<Moon className="w-5 h-5" />}
-              title="Dark Mode"
-              description="Always on"
-              action={
-                <Switch checked={true} disabled />
-              }
-            />
+            <SettingItem icon={<Clock className="w-5 h-5" />} title="Skärmtid från steg" description="200 steg = 1 minut" />
           </div>
         </motion.div>
 
@@ -351,12 +240,12 @@ export default function Settings() {
           <div className="space-y-3">
             <SettingItem
               icon={<Shield className="w-5 h-5" />}
-              title="Privacy Policy"
+              title="Integritet"
               onClick={() => navigate('/privacy-policy')}
             />
             <SettingItem
               icon={<HelpCircle className="w-5 h-5" />}
-              title="Help & Support"
+              title="Hjälp och support"
               onClick={() => navigate('/help-support')}
             />
           </div>
@@ -375,7 +264,7 @@ export default function Settings() {
             onClick={handleSignOut}
           >
             <LogOut className="w-5 h-5 mr-2" />
-            Log Out
+            Logga ut
           </Button>
         </motion.div>
 

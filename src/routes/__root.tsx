@@ -21,16 +21,16 @@ function NotFoundComponent() {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
+        <h2 className="mt-4 text-xl font-semibold text-foreground">Sidan finns inte</h2>
         <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
+          Sidan finns inte eller har flyttats.
         </p>
         <div className="mt-6">
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Go home
+            Till startsidan
           </Link>
         </div>
       </div>
@@ -49,10 +49,10 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
     <div className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="max-w-md text-center">
         <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
+          Sidan kunde inte laddas
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
+          Något gick fel. Försök igen eller gå till startsidan.
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <button
@@ -62,13 +62,13 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
             }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
-            Try again
+            Försök igen
           </button>
           <a
             href="/"
             className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
           >
-            Go home
+            Till startsidan
           </a>
         </div>
       </div>
@@ -84,16 +84,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { title: "GameRun - Run More, Play More" },
-      { name: "description", content: "Motivate kids to stay active by earning screen time through physical activity" },
+      { title: "GameRun – Rörelse blir skärmtid" },
+      { name: "description", content: "GameRun – Rörelse blir skärmtid i GameRun. Följ verklig aktivitet och skärmtid från steg." },
       { name: "author", content: "GameRun" },
       { name: "theme-color", content: "#000000" },
       { name: "mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-capable", content: "yes" },
       { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
       { name: "apple-mobile-web-app-title", content: "GameRun" },
-      { property: "og:title", content: "GameRun - Run More, Play More" },
-      { property: "og:description", content: "Motivate kids to stay active by earning screen time through physical activity" },
+      { property: "og:title", content: "GameRun – Rörelse blir skärmtid" },
+      { property: "og:description", content: "GameRun – Rörelse blir skärmtid i GameRun. Följ verklig aktivitet och skärmtid från steg." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -169,7 +169,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="sv">
       <head>
         <HeadContent />
       </head>

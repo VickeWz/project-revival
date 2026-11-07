@@ -71,7 +71,7 @@ export const ActivityRing = ({
             >
               {Math.round(progress)}%
             </motion.span>
-            <span className="text-sm text-muted-foreground">Activity</span>
+            <span className="text-sm text-muted-foreground">Aktivitet</span>
           </>
         )}
       </div>

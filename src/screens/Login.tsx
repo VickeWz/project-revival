@@ -46,23 +46,23 @@ export default function Login() {
       if (authMode === 'signin') {
         const { error } = await signIn(email, password);
         if (error) {
-          toast.error(error.message);
+          toast.error("Kunde inte slutföra begäran. Kontrollera uppgifterna och försök igen.");
           setIsLoading(false);
         } else {
           setIsLoading(false);
-          toast.success('Welcome back to GameRun!');
+          toast.success('Välkommen tillbaka till GameRun!');
           // Redirect handled by AuthRedirect in App.tsx
         }
       } else {
-        const { error, needsConfirmation } = await signUp(email, password, displayName, userType!);
+        const { error, needsConfirmation } = await signUp(email, password, displayName, userType ?? "child");
         setIsLoading(false);
         if (error) {
-          toast.error(error.message);
+          toast.error("Kunde inte slutföra begäran. Kontrollera uppgifterna och försök igen.");
         } else if (needsConfirmation) {
-          toast.success('Account created! Check your email to confirm it, then sign in.');
+          toast.success('Kontot är skapat! Bekräfta via e-post och logga sedan in.');
           setAuthMode('signin');
         } else {
-          toast.success('Account created!');
+          toast.success('Kontot är skapat!');
         }
       }
     } catch {
@@ -72,7 +72,7 @@ export default function Login() {
 
   const handleForgotPassword = async () => {
     if (!email) {
-      toast.error('Enter your email first.');
+      toast.error('Ange din e-postadress först.');
       return;
     }
     const origin = window.location.origin.startsWith('http')
@@ -81,8 +81,8 @@ export default function Login() {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: `${origin}/reset-password`,
     });
-    if (error) toast.error(error.message);
-    else toast.success('Check your email for a link to reset your password.');
+    if (error) toast.error("Kunde inte slutföra begäran. Kontrollera uppgifterna och försök igen.");
+    else toast.success('Kontrollera din e-post för en länk för att återställa lösenordet.');
   };
 
   const handleSwitchToSignIn = () => {
@@ -125,7 +125,7 @@ export default function Login() {
           <h1 className="font-display text-3xl font-bold text-foreground">
             Game<span className="text-primary">Run</span>
           </h1>
-          <p className="text-muted-foreground mt-2">Run more, play more</p>
+          <p className="text-muted-foreground mt-2">Rör dig mer, spela mer</p>
         </motion.div>
 
         {/* Back button */}
@@ -137,7 +137,7 @@ export default function Login() {
           >
             <Button variant="ghost" size="sm" onClick={handleBack}>
               <ArrowLeft className="w-4 h-4 mr-2" />
-              Back
+              Tillbaka
             </Button>
           </motion.div>
         )}
@@ -150,7 +150,7 @@ export default function Login() {
             className="space-y-4"
           >
             <h2 className="text-center text-xl font-semibold text-foreground mb-6">
-              Who are you?
+              Vem är du?
             </h2>
             
             <motion.button
@@ -163,8 +163,8 @@ export default function Login() {
                 <Users className="w-7 h-7 text-primary-foreground" />
               </div>
               <div>
-                <h3 className="font-display font-bold text-lg text-foreground">I'm a Parent</h3>
-                <p className="text-sm text-muted-foreground">Manage your children's screen time</p>
+                <h3 className="font-display font-bold text-lg text-foreground">Jag är förälder</h3>
+                <p className="text-sm text-muted-foreground">Hantera dina barns skärmtid</p>
               </div>
             </motion.button>
 
@@ -178,18 +178,18 @@ export default function Login() {
                 <User className="w-7 h-7 text-primary-foreground" />
               </div>
               <div>
-                <h3 className="font-display font-bold text-lg text-foreground">I'm a Kid</h3>
-                <p className="text-sm text-muted-foreground">Track activity & earn screen time</p>
+                <h3 className="font-display font-bold text-lg text-foreground">Jag är barn</h3>
+                <p className="text-sm text-muted-foreground">Följ din aktivitet och tjäna skärmtid</p>
               </div>
             </motion.button>
 
             <p className="text-center text-sm text-muted-foreground mt-6">
-              Already have an account?{' '}
+              Har du redan ett konto?{' '}
               <button 
                 onClick={handleSwitchToSignIn}
                 className="text-primary hover:underline font-medium"
               >
-                Sign in
+                Logga in
               </button>
             </p>
           </motion.div>
@@ -203,16 +203,16 @@ export default function Login() {
             className="bg-card rounded-2xl p-6 shadow-card border border-border/50"
           >
             <h2 className="text-center text-xl font-semibold text-foreground mb-6">
-              Welcome back
+              Välkommen tillbaka
             </h2>
             
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">E-post</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="your@email.com"
+                  placeholder="din@epost.se"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -221,7 +221,7 @@ export default function Login() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Lösenord</Label>
                 <Input
                   id="password"
                   type="password"
@@ -239,24 +239,24 @@ export default function Login() {
                 size="lg"
                 disabled={isLoading}
               >
-                {isLoading ? 'Signing in...' : 'Sign In'}
+                {isLoading ? 'Loggar in…' : 'Logga in'}
               </Button>
               <button
                 type="button"
                 onClick={handleForgotPassword}
                 className="w-full text-center text-sm text-primary hover:underline"
               >
-                Forgot password?
+                Glömt lösenordet?
               </button>
             </form>
 
             <p className="text-center text-sm text-muted-foreground mt-6">
-              Don't have an account?{' '}
+              Har du inget konto?{' '}
               <button 
                 onClick={handleSwitchToSignUp}
                 className="text-primary hover:underline font-medium"
               >
-                Sign up
+                Skapa konto
               </button>
             </p>
           </motion.div>
@@ -270,16 +270,16 @@ export default function Login() {
             className="bg-card rounded-2xl p-6 shadow-card border border-border/50"
           >
             <h2 className="text-center text-xl font-semibold text-foreground mb-6">
-              Create your account
+              Skapa ditt konto
             </h2>
             
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="displayName">Display Name</Label>
+                <Label htmlFor="displayName">Namn</Label>
                 <Input
                   id="displayName"
                   type="text"
-                  placeholder="Your name"
+                  placeholder="Ditt namn"
                   value={displayName}
                   onChange={(e) => setDisplayName(e.target.value)}
                   required
@@ -288,11 +288,11 @@ export default function Login() {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">E-post</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="your@email.com"
+                  placeholder="din@epost.se"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
@@ -301,7 +301,7 @@ export default function Login() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Lösenord</Label>
                 <Input
                   id="password"
                   type="password"
@@ -320,17 +320,17 @@ export default function Login() {
                 size="lg"
                 disabled={isLoading}
               >
-                {isLoading ? 'Creating...' : 'Create Account'}
+                {isLoading ? 'Skapar konto…' : 'Skapa konto'}
               </Button>
             </form>
 
             <p className="text-center text-sm text-muted-foreground mt-6">
-              Already have an account?{' '}
+              Har du redan ett konto?{' '}
               <button 
                 onClick={handleSwitchToSignIn}
                 className="text-primary hover:underline font-medium"
               >
-                Sign in
+                Logga in
               </button>
             </p>
           </motion.div>

@@ -7,10 +7,10 @@ export const Route = createFileRoute("/friends")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { title: "Friends — GameRun" },
-      { name: "description", content: "GameRun: friends — earn screen time by staying active." },
-      { property: "og:title", content: "Friends — GameRun" },
-      { property: "og:description", content: "Earn screen time by staying active with GameRun." },
+      { title: "Vänner — GameRun" },
+      { name: "description", content: "Vänner i GameRun. Följ verklig aktivitet och skärmtid från steg." },
+      { property: "og:title", content: "Vänner — GameRun" },
+      { property: "og:description", content: "Vänner i GameRun. Följ verklig aktivitet och skärmtid från steg." },
     ],
   }),
   component: () => (

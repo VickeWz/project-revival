@@ -27,20 +27,20 @@ interface OnboardingStep {
 const parentSteps: OnboardingStep[] = [
   {
     icon: <Users className="w-8 h-8" />,
-    title: "Welcome, Parent!",
-    description: "GameRun helps you motivate your kids to stay active while managing their screen time in a healthy way.",
+    title: "Välkommen som förälder!",
+    description: "GameRun omvandlar fysisk aktivitet till skärmtid.",
     color: "gradient-hero"
   },
   {
     icon: <Target className="w-8 h-8" />,
-    title: "Set Goals",
-    description: "Create daily activity challenges for your children. They'll earn screen time by completing steps, distance, or active minutes.",
+    title: "Steg och skärmtid",
+    description: "Varje 200 steg under ett pass ger 1 minut skärmtid.",
     color: "gradient-activity"
   },
   {
     icon: <Smartphone className="w-8 h-8" />,
-    title: "Monitor Progress",
-    description: "Track your children's activity and screen time balance from your dashboard. Grant bonus time for exceptional effort!",
+    title: "Följ utvecklingen",
+    description: "Se barnens sparade aktivitet och skärmtid. Du kan också ge extra tid.",
     color: "gradient-reward"
   }
 ];
@@ -48,20 +48,20 @@ const parentSteps: OnboardingStep[] = [
 const childSteps: OnboardingStep[] = [
   {
     icon: <Sparkles className="w-8 h-8" />,
-    title: "Welcome to GameRun!",
-    description: "Get ready to move, earn, and play! The more you run, the more screen time you earn.",
+    title: "Välkommen till GameRun!",
+    description: "Dina steg under pass omvandlas till skärmtid.",
     color: "gradient-activity"
   },
   {
     icon: <Footprints className="w-8 h-8" />,
-    title: "Complete Challenges",
-    description: "Walk, run, or play active games to complete daily challenges. Your activity is tracked automatically!",
+    title: "Starta ett pass",
+    description: "Gå eller spring under ett pass. Steg och distans hämtas från din iPhone.",
     color: "gradient-hero"
   },
   {
     icon: <Activity className="w-8 h-8" />,
-    title: "Earn Screen Time",
-    description: "Every step counts! Reach your goals to unlock screen time and show your parents how active you are.",
+    title: "Tjäna skärmtid",
+    description: "Varje 200 steg ger 1 minut skärmtid. När passet avslutas sparas tiden.",
     color: "gradient-reward"
   }
 ];
@@ -96,10 +96,10 @@ export default function Onboarding() {
       if (error) throw error;
       
       await refreshProfile();
-      toast.success("You're all set! Let's get moving!");
+      toast.success("Allt är klart!");
       navigate(profile.role === 'parent' ? '/parent' : '/child');
     } catch (error) {
-      toast.error("Something went wrong. Please try again.");
+      toast.error("Något gick fel. Försök igen.");
     } finally {
       setIsCompleting(false);
     }
@@ -193,15 +193,15 @@ export default function Onboarding() {
                 disabled={isCompleting}
               >
                 {isCompleting ? (
-                  "Setting up..."
+                  "Förbereder…"
                 ) : isLastStep ? (
                   <>
                     <CheckCircle2 className="w-5 h-5" />
-                    Get Started
+                    Kom igång
                   </>
                 ) : (
                   <>
-                    Next
+                    Nästa
                     <ArrowRight className="w-5 h-5" />
                   </>
                 )}
@@ -223,7 +223,7 @@ export default function Onboarding() {
               className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               disabled={isCompleting}
             >
-              Skip intro
+              Hoppa över introduktionen
             </button>
           </motion.div>
         )}

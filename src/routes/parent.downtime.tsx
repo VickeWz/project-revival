@@ -7,10 +7,10 @@ export const Route = createFileRoute("/parent/downtime")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { title: "Downtime — GameRun" },
-      { name: "description", content: "GameRun: downtime — earn screen time by staying active." },
-      { property: "og:title", content: "Downtime — GameRun" },
-      { property: "og:description", content: "Earn screen time by staying active with GameRun." },
+      { title: "Skärmfri tid — GameRun" },
+      { name: "description", content: "Skärmfri tid i GameRun. Följ verklig aktivitet och skärmtid från steg." },
+      { property: "og:title", content: "Skärmfri tid — GameRun" },
+      { property: "og:description", content: "Skärmfri tid i GameRun. Följ verklig aktivitet och skärmtid från steg." },
     ],
   }),
   component: () => (

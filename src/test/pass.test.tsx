@@ -38,16 +38,16 @@ afterEach(cleanup);
 
 it('updates each received step and earned minute while the pass stays active', async () => {
   render(<Pass />);
-  fireEvent.click(screen.getByText('Start Pass'));
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Start Pass' })).toBeEnabled());
-  fireEvent.click(screen.getByRole('button', { name: 'Start Pass' }));
-  await screen.findByRole('button', { name: 'End Pass' });
+  fireEvent.click(screen.getByText('Starta pass'));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Starta pass' })).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', { name: 'Starta pass' }));
+  await screen.findByRole('button', { name: 'Avsluta pass' });
   const { act } = await import('@testing-library/react');
   const samples: Array<[number, number]> = [[199, 0], [200, 1], [201, 1], [400, 2]];
   for (const [steps, minutes] of samples) {
     act(() => mocks.onData?.({ steps, distance: 110, activeMinutes: 1 }));
-    expect(screen.getByLabelText('Steps this pass')).toHaveTextContent(String(steps));
-    expect(screen.getByLabelText('Minutes earned')).toHaveTextContent(String(minutes));
+    expect(screen.getByLabelText('Steg under passet')).toHaveTextContent(String(steps));
+    expect(screen.getByLabelText('Intjänade minuter')).toHaveTextContent(String(minutes));
   }
   expect(mocks.rpc).not.toHaveBeenCalled();
 });
@@ -56,10 +56,10 @@ it('saves one minute for a 200-step pass', async () => {
   mocks.getPassData.mockResolvedValue({ steps: 200, distance: 110, activeMinutes: 1 });
   mocks.rpc.mockResolvedValue({ data: { earned_minutes: 1, balance: 11 }, error: null });
   render(<Pass />);
-  fireEvent.click(screen.getByText('Start Pass'));
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Start Pass' })).toBeEnabled());
-  fireEvent.click(screen.getByRole('button', { name: 'Start Pass' }));
-  fireEvent.click(await screen.findByRole('button', { name: 'End Pass' }));
+  fireEvent.click(screen.getByText('Starta pass'));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Starta pass' })).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', { name: 'Starta pass' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Avsluta pass' }));
   await screen.findByText('11m');
   expect(mocks.rpc).toHaveBeenCalledWith('complete_step_pass', expect.objectContaining({ p_steps: 200 }));
 });
@@ -68,14 +68,14 @@ it('shows session steps and credits 5 minutes from the final 1000-step read', as
   mocks.getPassData.mockResolvedValue({ steps: 1000, distance: 700, activeMinutes: 10 });
   mocks.rpc.mockResolvedValue({ data: { earned_minutes: 5, balance: 15 }, error: null });
   render(<Pass />);
-  fireEvent.click(screen.getByText('Start Pass'));
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Start Pass' })).toBeEnabled());
-  fireEvent.click(screen.getByRole('button', { name: 'Start Pass' }));
-  await screen.findByRole('button', { name: 'End Pass' });
+  fireEvent.click(screen.getByText('Starta pass'));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Starta pass' })).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', { name: 'Starta pass' }));
+  await screen.findByRole('button', { name: 'Avsluta pass' });
   const { act } = await import('@testing-library/react');
   act(() => mocks.onData?.({ steps: 999, distance: 700, activeMinutes: 10 }));
   expect(screen.getByText('999')).toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: 'End Pass' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Avsluta pass' }));
   await screen.findByText('15m');
   expect(mocks.rpc).toHaveBeenCalledTimes(1);
   expect(mocks.rpc).toHaveBeenCalledWith('complete_step_pass', expect.objectContaining({ p_steps: 1000, p_distance: 700 }));
@@ -86,12 +86,12 @@ it('retains the session identifier on a failed save so retry cannot double-credi
   mocks.rpc.mockResolvedValueOnce({ data: null, error: new Error('Offline') })
     .mockResolvedValueOnce({ data: { earned_minutes: 10, balance: 20 }, error: null });
   render(<Pass />);
-  fireEvent.click(screen.getByText('Start Pass'));
-  await waitFor(() => expect(screen.getByRole('button', { name: 'Start Pass' })).toBeEnabled());
-  fireEvent.click(screen.getByRole('button', { name: 'Start Pass' }));
-  fireEvent.click(await screen.findByRole('button', { name: 'End Pass' }));
-  await waitFor(() => expect(screen.getByRole('button', { name: 'End Pass' })).toBeEnabled());
-  fireEvent.click(screen.getByRole('button', { name: 'End Pass' }));
+  fireEvent.click(screen.getByText('Starta pass'));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Starta pass' })).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', { name: 'Starta pass' }));
+  fireEvent.click(await screen.findByRole('button', { name: 'Avsluta pass' }));
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Avsluta pass' })).toBeEnabled());
+  fireEvent.click(screen.getByRole('button', { name: 'Avsluta pass' }));
   await screen.findByText('20m');
   expect(mocks.rpc).toHaveBeenCalledTimes(2);
   expect(mocks.rpc.mock.calls[0]?.[1]).toEqual(mocks.rpc.mock.calls[1]?.[1]);

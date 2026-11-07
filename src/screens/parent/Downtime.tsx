@@ -83,9 +83,9 @@ export default function Downtime() {
 
     setSaving(false);
     if (error) {
-      toast.error("Failed to save downtime settings");
+      toast.error("Kunde inte spara skärmfri tid");
     } else {
-      toast.success("Downtime settings saved!");
+      toast.success("Skärmfri tid är sparad!");
       navigate(-1);
     }
   };
@@ -116,12 +116,12 @@ export default function Downtime() {
               <ArrowLeft className="w-5 h-5" />
             </Button>
             <div>
-              <h1 className="font-display font-bold text-xl text-foreground">Downtime</h1>
+              <h1 className="font-display font-bold text-xl text-foreground">Skärmfri tid</h1>
               {childName && <p className="text-sm text-muted-foreground">{childName}</p>}
             </div>
           </div>
           <Button onClick={handleSave} disabled={saving} size="sm">
-            {saving ? "Saving..." : "Save"}
+            {saving ? "Sparar…" : "Spara"}
           </Button>
         </div>
       </header>
@@ -139,9 +139,9 @@ export default function Downtime() {
                 <Clock className="w-5 h-5 text-white" />
               </div>
               <div>
-                <p className="font-medium text-foreground">Scheduled</p>
+                <p className="font-medium text-foreground">Schemalagd</p>
                 <p className="text-sm text-muted-foreground">
-                  {isEnabled ? `${startTime} to ${endTime}` : "Off"}
+                  {isEnabled ? `${startTime} till ${endTime}` : "Av"}
                 </p>
               </div>
             </div>
@@ -158,10 +158,10 @@ export default function Downtime() {
               transition={{ delay: 0.1 }}
               className="bg-card rounded-2xl p-4 mb-6"
             >
-              <h3 className="text-sm font-semibold text-muted-foreground mb-4">Schedule</h3>
+              <h3 className="text-sm font-semibold text-muted-foreground mb-4">Schema</h3>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-foreground">From</span>
+                  <span className="text-foreground">Från</span>
                   <input
                     type="time"
                     value={startTime}
@@ -170,7 +170,7 @@ export default function Downtime() {
                   />
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-foreground">To</span>
+                  <span className="text-foreground">Till</span>
                   <input
                     type="time"
                     value={endTime}
@@ -188,11 +188,11 @@ export default function Downtime() {
               transition={{ delay: 0.2 }}
               className="bg-card rounded-2xl p-4 mb-6"
             >
-              <h3 className="text-sm font-semibold text-muted-foreground mb-4">Days</h3>
+              <h3 className="text-sm font-semibold text-muted-foreground mb-4">Dagar</h3>
               <div className="flex flex-wrap gap-2">
                 {DAYS.map((day) => (
                   <button
-                    key={day}
+                    key={({ Sun: "Sön", Mon: "Mån", Tue: "Tis", Wed: "Ons", Thu: "Tor", Fri: "Fre", Sat: "Lör" } as Record<string, string>)[day]}
                     onClick={() => toggleDay(day)}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                       selectedDays.includes(day)
@@ -200,7 +200,7 @@ export default function Downtime() {
                         : "bg-muted text-muted-foreground"
                     }`}
                   >
-                    {day}
+                    {({ Sun: "Sön", Mon: "Mån", Tue: "Tis", Wed: "Ons", Thu: "Tor", Fri: "Fre", Sat: "Lör" } as Record<string, string>)[day]}
                   </button>
                 ))}
               </div>
@@ -215,10 +215,7 @@ export default function Downtime() {
           transition={{ delay: 0.3 }}
           className="bg-muted/30 rounded-2xl p-4"
         >
-          <p className="text-sm text-muted-foreground">
-            During downtime, only apps in "Always Allowed" and phone calls will be available. 
-            This helps establish healthy screen time boundaries.
-          </p>
+          <p className="text-sm text-muted-foreground">Dina val sparas på kontot. Blockering av andra appar på iPhone är inte ansluten ännu.</p>
         </motion.div>
       </main>
     </div>

@@ -8,8 +8,8 @@ interface ParentNavProps {
 
 export function ParentNav({ activeTab, onTabChange }: ParentNavProps) {
   const tabs = [
-    { id: "home" as const, label: "Home", icon: Home },
-    { id: "screentime" as const, label: "Screen Time", icon: BarChart3 },
+    { id: "home" as const, label: "Hem", icon: Home },
+    { id: "screentime" as const, label: "Skärmtid", icon: BarChart3 },
   ];
 
   return (
