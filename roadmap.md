@@ -1,3 +1,4 @@
+- [ ] Uppdatera aktivt pass tätare, visa distans i önskade intervall och tjäna 1 minut per 200 steg; testa räknare och sparande.
 - [x] Uppdatera Hälsa-data löpande på startsidan och under pass.
 - [x] Beräkna och spara passets skärmtid från steg, inte sträcka.
 - [x] Automatiska tester av synkning, omräkning och återförsök passerar.
