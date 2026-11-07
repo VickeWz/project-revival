@@ -486,7 +486,7 @@ export default function ParentDashboard() {
                     
                     {isModified && (
                       <p className="text-xs text-primary mb-3 text-center">
-                        Modified from {request.requestedMinutes} → {currentMinutes} minutes
+                        Ändrat från {request.requestedMinutes} till {currentMinutes} minuter
                       </p>
                     )}
                     

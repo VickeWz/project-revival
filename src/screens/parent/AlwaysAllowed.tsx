@@ -195,7 +195,7 @@ export default function AlwaysAllowed() {
                     <IconComponent className="w-5 h-5 text-white" />
                   </div>
                   <div className="flex-1">
-                    <p className="font-medium text-foreground">{app.app_name}</p>
+                    <p className="font-medium text-foreground">{({"Phone": "Telefon", "Messages": "Meddelanden", "Maps": "Kartor", "Clock": "Klocka", "Health": "Hälsa", "Books": "Böcker", "Podcasts": "Podcaster", "Camera": "Kamera"} as Record<string, string>)[app.app_name] ?? app.app_name}</p>
                     <p className="text-xs text-muted-foreground">{({"Games": "Spel", "Entertainment": "Underhållning", "Social": "Socialt", "Productivity": "Produktivitet", "Communication": "Kommunikation", "Utilities": "Verktyg", "Health": "Hälsa", "Education": "Utbildning"} as Record<string, string>)[app.category] ?? app.category}</p>
                   </div>
                   <Button
@@ -233,7 +233,7 @@ export default function AlwaysAllowed() {
             <div className="space-y-2">
               {PRESET_APPS.filter(app => !allowedApps.some(a => a.app_name === app.name)).map((app) => (
                 <button
-                  key={app.name}
+                  key={({"Phone": "Telefon", "Messages": "Meddelanden", "Maps": "Kartor", "Clock": "Klocka", "Health": "Hälsa", "Books": "Böcker", "Podcasts": "Podcaster", "Camera": "Kamera"} as Record<string, string>)[app.name] ?? app.name}
                   onClick={() => handleAddApp(app.name, app.category)}
                   className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors text-left"
                 >
@@ -241,7 +241,7 @@ export default function AlwaysAllowed() {
                     <app.icon className="w-5 h-5 text-white" />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground">{app.name}</p>
+                    <p className="font-medium text-foreground">{({"Phone": "Telefon", "Messages": "Meddelanden", "Maps": "Kartor", "Clock": "Klocka", "Health": "Hälsa", "Books": "Böcker", "Podcasts": "Podcaster", "Camera": "Kamera"} as Record<string, string>)[app.name] ?? app.name}</p>
                     <p className="text-xs text-muted-foreground">{({"Games": "Spel", "Entertainment": "Underhållning", "Social": "Socialt", "Productivity": "Produktivitet", "Communication": "Kommunikation", "Utilities": "Verktyg", "Health": "Hälsa", "Education": "Utbildning"} as Record<string, string>)[app.category] ?? app.category}</p>
                   </div>
                 </button>

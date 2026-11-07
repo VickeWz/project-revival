@@ -207,7 +207,7 @@ export default function Settings() {
           <div className="space-y-3">
             <SettingItem
               icon={<Heart className="w-5 h-5" />}
-              title="HealthKit"
+              title="Hälsa"
               description={isHealthKitAvailable ? "Hämta steg, distans och aktivitet" : "Endast tillgängligt på iPhone"}
               action={
                 <Switch
