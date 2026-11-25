@@ -1,514 +1,207 @@
-// @ts-nocheck -- imported code written for a looser TypeScript config
-import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { ChildCard } from "@/components/ChildCard";
-import { 
-  LogOut, 
-  Plus, 
-  Bell, 
-  Settings,
-  TrendingUp,
-  Users,
-  Clock,
-  Activity,
-  Loader2,
-  Check,
-  X,
-  Minus
-} from "lucide-react";
-import { useNavigate } from "@/lib/router-compat";
+import { useRef, useState } from "react";
+import { Loader2, Settings, UserPlus } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { AppScreen } from "@/components/layout/AppScreen";
+import { ChildSummaryCard } from "@/components/parent/ChildSummaryCard";
+import { GiveTimeDrawer } from "@/components/parent/GiveTimeDrawer";
+import { RequestCard } from "@/components/parent/RequestCard";
+import { ChildDetail } from "@/screens/parent/ChildDetail";
 import { useAuth } from "@/hooks/useAuth";
+import { useParentOverview, type LinkedChild, type TimeRequest } from "@/hooks/useParentOverview";
 import { supabase } from "@/integrations/supabase/client";
-import { ParentNav } from "@/components/parent/ParentNav";
-import { ScreenTimeInsights } from "@/components/parent/ScreenTimeInsights";
+import { useNavigate, useSearchParams } from "@/lib/router-compat";
 
-interface LinkedChild {
-  id: string;
-  name: string;
-  avatar: string | null;
-  screenTimeRemaining: number;
-  activityProgress: number;
-  isLocked: boolean;
-}
-
-interface ScreenTimeRequest {
-  id: string;
-  childId: string;
-  childName: string;
-  requestedMinutes: number;
-  createdAt: string;
-}
-
+/**
+ * The parent app: one overview (requests first, then each child) with pushed screens for a
+ * child (/parent?barn=<id>), adding a child and settings. No tab bar: there is one main job.
+ */
 export default function ParentDashboard() {
-  const [children, setChildren] = useState<LinkedChild[]>([]);
-  const [requests, setRequests] = useState<ScreenTimeRequest[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [processingRequest, setProcessingRequest] = useState<string | null>(null);
-  const [editingMinutes, setEditingMinutes] = useState<Record<string, number>>({});
-  const [activeTab, setActiveTab] = useState<"home" | "screentime">("home");
-  const grantIds = useRef<Record<string, string>>({});
-  const { profile, signOut } = useAuth();
+  const { profile } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const selectedId = searchParams.get("barn");
+  const { children, setChildren, requests, setRequests, loading, refresh } = useParentOverview();
+  const [giveTo, setGiveTo] = useState<LinkedChild | null>(null);
+  const [busyRequest, setBusyRequest] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+  // Same id for a retry of the same request and amount, so a lost response cannot credit twice.
+  const grantIds = useRef<Record<string, string>>({});
 
-  useEffect(() => {
-    if (profile?.id) {
-      let pending = false;
-      const refresh = async () => {
-        if (pending || document.visibilityState === "hidden") return;
-        pending = true;
-        try { await Promise.all([fetchLinkedChildren(), fetchPendingRequests()]); }
-        finally { pending = false; }
-      };
-      void refresh();
-      const interval = setInterval(() => void refresh(), 3000);
-      window.addEventListener("focus", refresh);
-      return () => { clearInterval(interval); window.removeEventListener("focus", refresh); };
-    }
-  }, [profile?.id]);
+  const setBalance = (childId: string, balance: number) =>
+    setChildren((prev) => prev.map((child) => (child.id === childId ? { ...child, balance } : child)));
 
-  const fetchLinkedChildren = async () => {
-    if (!profile?.id) return;
-
+  const approve = async (request: TimeRequest, minutes: number) => {
+    if (busyRequest) return;
+    setBusyRequest(request.id);
+    const key = `request:${request.id}:${minutes}`;
     try {
-      const { data: links, error: linksError } = await supabase
-        .from("parent_child_links")
-        .select("child_id")
-        .eq("parent_id", profile.id);
-
-      if (linksError) {
-        console.error("Error fetching links:", linksError);
-        return;
-      }
-
-      if (!links || links.length === 0) {
-        setChildren([]);
-        setLoading(false);
-        return;
-      }
-
-      const childIds = links.map(link => link.child_id);
-
-      const { data: childProfiles, error: profilesError } = await supabase
-        .from("profiles")
-        .select("id, display_name, avatar_url")
-        .in("id", childIds);
-
-      if (profilesError) {
-        console.error("Error fetching child profiles:", profilesError);
-        return;
-      }
-
-      const { data: balances } = await supabase
-        .from("screen_time_balance")
-        .select("user_id, minutes_remaining")
-        .in("user_id", childIds);
-
-      const today = new Date().toISOString().split("T")[0];
-      const { data: activities } = await supabase
-        .from("activity_logs")
-        .select("user_id, distance_meters")
-        .in("user_id", childIds)
-        .eq("logged_at", today);
-
-      const linkedChildren: LinkedChild[] = (childProfiles || []).map(child => {
-        const balance = balances?.find(b => b.user_id === child.id);
-        const activity = activities?.find(a => a.user_id === child.id);
-        const screenTime = balance?.minutes_remaining || 0;
-        const distance = activity?.distance_meters || 0;
-        const activityProgress = Math.min(100, Math.round((distance / 5000) * 100));
-
-        return {
-          id: child.id,
-          name: child.display_name,
-          avatar: child.avatar_url,
-          screenTimeRemaining: screenTime,
-          activityProgress,
-          isLocked: screenTime <= 0,
-        };
-      });
-
-      setChildren(linkedChildren);
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchPendingRequests = async () => {
-    if (!profile?.id) return;
-
-    try {
-      const { data, error } = await supabase
-        .from("screen_time_requests")
-        .select("id, child_id, requested_minutes, created_at")
-        .eq("parent_id", profile.id)
-        .eq("status", "pending")
-        .order("created_at", { ascending: false });
-
-      if (error) {
-        console.error("Error fetching requests:", error);
-        return;
-      }
-
-      if (!data || data.length === 0) {
-        setRequests([]);
-        return;
-      }
-
-      const childIds = data.map(r => r.child_id);
-      const { data: childProfiles } = await supabase
-        .from("profiles")
-        .select("id, display_name")
-        .in("id", childIds);
-
-      const formattedRequests: ScreenTimeRequest[] = data.map(req => {
-        const child = childProfiles?.find(p => p.id === req.child_id);
-        return {
-          id: req.id,
-          childId: req.child_id,
-          childName: child?.display_name || "Barn",
-          requestedMinutes: req.requested_minutes,
-          createdAt: req.created_at,
-        };
-      });
-
-      setRequests(formattedRequests);
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  };
-
-  const handleAcceptRequest = async (request: ScreenTimeRequest) => {
-    setProcessingRequest(request.id);
-    const minutesToGrant = editingMinutes[request.id] ?? request.requestedMinutes;
-    
-    try {
-      const key = `request:${request.id}`;
       grantIds.current[key] ??= crypto.randomUUID();
-      const { error } = await supabase.rpc("grant_screen_time", {
-        p_id: grantIds.current[key], p_child_id: request.childId,
-        p_minutes: minutesToGrant, p_request_id: request.id,
+      const { data, error } = await supabase.rpc("grant_screen_time", {
+        p_id: grantIds.current[key],
+        p_child_id: request.childId,
+        p_minutes: minutes,
+        p_request_id: request.id,
       });
       if (error) throw error;
       delete grantIds.current[key];
-
-      toast.success(`Godkänt ${minutesToGrant} minuter för ${request.childName}!`);
-      setRequests(prev => prev.filter(r => r.id !== request.id));
-      setEditingMinutes(prev => {
-        const newState = { ...prev };
-        delete newState[request.id];
-        return newState;
-      });
-      fetchLinkedChildren();
+      toast.success(`${minutes} min har lagts till hos ${request.childName}.`);
+      setRequests((prev) => prev.filter((r) => r.id !== request.id));
+      if (typeof data === "number") setBalance(request.childId, data);
     } catch (error) {
       console.error("Error accepting request:", error);
-      toast.error("Kunde inte godkänna förfrågan");
+      toast.error("Kunde inte godkänna förfrågan. Försök igen.");
+      void refresh();
     } finally {
-      setProcessingRequest(null);
+      setBusyRequest(null);
     }
   };
 
-  const adjustRequestMinutes = (requestId: string, currentMinutes: number, amount: number) => {
-    const current = editingMinutes[requestId] ?? currentMinutes;
-    const newValue = Math.max(5, Math.min(120, current + amount));
-    setEditingMinutes(prev => ({ ...prev, [requestId]: newValue }));
-  };
-
-  const handleDeclineRequest = async (request: ScreenTimeRequest) => {
-    setProcessingRequest(request.id);
+  const decline = async (request: TimeRequest) => {
+    if (busyRequest) return;
+    setBusyRequest(request.id);
     try {
       const { error } = await supabase
         .from("screen_time_requests")
         .update({ status: "declined", responded_at: new Date().toISOString() })
         .eq("id", request.id);
-
       if (error) throw error;
-
-      toast.info(`Avslagit förfrågan från ${request.childName}`);
-      setRequests(prev => prev.filter(r => r.id !== request.id));
+      toast(`Förfrågan från ${request.childName} avslogs.`);
+      setRequests((prev) => prev.filter((r) => r.id !== request.id));
     } catch (error) {
       console.error("Error declining request:", error);
-      toast.error("Kunde inte avslå förfrågan");
+      toast.error("Kunde inte avslå förfrågan. Försök igen.");
     } finally {
-      setProcessingRequest(null);
+      setBusyRequest(null);
     }
   };
 
-  const handleGrantTime = async (childId: string, childName: string) => {
-    try {
-      const key = `child:${childId}`;
-      grantIds.current[key] ??= crypto.randomUUID();
-      const { error } = await supabase.rpc("grant_screen_time", {
-        p_id: grantIds.current[key], p_child_id: childId, p_minutes: 15,
-      });
-      if (error) throw error;
-      delete grantIds.current[key];
-
-      toast.success(`Gett 15 minuter till ${childName}!`, {
-        description: "Skärmtiden har lagts till på kontot.",
-      });
-
-      fetchLinkedChildren();
-    } catch (error) {
-      console.error("Error granting time:", error);
-      toast.error("Kunde inte ge skärmtid");
-    }
-  };
-
-  const handleRemoveChild = async (childId: string, childName: string) => {
+  const remove = async (child: LinkedChild) => {
+    if (!profile?.id) return;
     try {
       const { error } = await supabase
         .from("parent_child_links")
         .delete()
-        .eq("parent_id", profile?.id)
-        .eq("child_id", childId);
-
+        .eq("parent_id", profile.id)
+        .eq("child_id", child.id);
       if (error) throw error;
-
-      toast.success(`${childName} har kopplats bort från ditt konto`);
-      setChildren(prev => prev.filter(c => c.id !== childId));
+      toast.success(`${child.name} är bortkopplad.`);
+      setChildren((prev) => prev.filter((c) => c.id !== child.id));
+      setRequests((prev) => prev.filter((r) => r.childId !== child.id));
+      navigate("/parent", { replace: true });
     } catch (error) {
       console.error("Error removing child:", error);
-      toast.error("Kunde inte koppla bort barnet");
+      toast.error("Kunde inte koppla bort barnet.");
     }
   };
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
-  };
+  const giveDrawer = (
+    <GiveTimeDrawer
+      child={giveTo}
+      onClose={() => setGiveTo(null)}
+      onGiven={(childId, balance) => {
+        if (balance !== null) setBalance(childId, balance);
+        setRefreshKey((key) => key + 1);
+      }}
+    />
+  );
+
+  if (selectedId) {
+    const selected = children.find((child) => child.id === selectedId);
+    if (selected) {
+      return (
+        <>
+          <ChildDetail
+            child={selected}
+            refreshKey={refreshKey}
+            onBack={() => navigate("/parent")}
+            onGive={() => setGiveTo(selected)}
+            onRemove={() => void remove(selected)}
+          />
+          {giveDrawer}
+        </>
+      );
+    }
+    return (
+      <AppScreen nav={false} back={{ label: "Översikt", onClick: () => navigate("/parent") }} title="Barnet">
+        {loading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-7 w-7 animate-spin text-primary" aria-label="Laddar" />
+          </div>
+        ) : (
+          <p className="text-muted-foreground">Barnet är inte kopplat till ditt konto.</p>
+        )}
+      </AppScreen>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 gradient-glass border-b border-border/50">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div>
-              <h1 className="font-display font-bold text-xl text-foreground">
-                Välkommen, {profile?.display_name || 'Förälder'}
-              </h1>
-              <p className="text-sm text-muted-foreground">Hantera dina barns skärmtid</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Button variant="ghost" size="icon" aria-label="Visa förfrågningar" onClick={() => { setActiveTab("home"); setTimeout(() => document.getElementById("time-requests")?.scrollIntoView({ behavior: "smooth" }), 0); }}>
-                <Bell className="w-5 h-5" />
-              </Button>
-              {requests.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-destructive text-destructive-foreground text-xs flex items-center justify-center font-bold">
-                  {requests.length}
-                </span>
-              )}
-            </div>
-            <Button variant="ghost" size="icon" onClick={() => navigate('/settings')}>
-              <Settings className="w-5 h-5" />
-            </Button>
-            <Button variant="ghost" size="icon" onClick={handleSignOut}>
-              <LogOut className="w-5 h-5" />
-            </Button>
-          </div>
-        </div>
-      </header>
-
-      <main className="max-w-6xl mx-auto px-6 py-8">
-        {/* Navigation Tabs */}
-        <ParentNav activeTab={activeTab} onTabChange={setActiveTab} />
-
-        {activeTab === "home" ? (
-          <>
-        {/* Children Section */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="font-display font-bold text-2xl text-foreground">Dina barn</h2>
-            <Button variant="outline" size="sm" onClick={() => navigate("/parent/add-child")}>
-              <Plus className="w-4 h-4 mr-1" />
-              Lägg till barn
-            </Button>
-          </div>
-
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 animate-spin text-primary" />
-            </div>
-          ) : children.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center py-12 bg-card rounded-2xl border border-border/50"
-            >
-              <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-              <h3 className="font-display font-bold text-lg text-foreground mb-2">Inga barn är kopplade ännu</h3>
-              <p className="text-muted-foreground mb-6">Koppla barnets konto för att se sparad aktivitet</p>
-              <Button onClick={() => navigate("/parent/add-child")} className="gradient-hero">
-                <Plus className="w-4 h-4 mr-2" />
-                Lägg till ditt första barn
-              </Button>
-            </motion.div>
-          ) : (
-            <div className="grid md:grid-cols-2 gap-6">
-              {children.map((child, index) => (
-                <motion.div
-                  key={child.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.1 }}
-                >
-                  <ChildCard
-                    name={child.name}
-                    avatar={child.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${child.name}`}
-                    screenTimeRemaining={child.screenTimeRemaining}
-                    activityProgress={child.activityProgress}
-                    isLocked={child.isLocked}
-                    onGrantTime={() => handleGrantTime(child.id, child.name)}
-                    onRemove={() => handleRemoveChild(child.id, child.name)}
-                  />
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Pending Screen Time Requests */}
-        <motion.div id="time-requests"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="bg-card rounded-2xl p-6 shadow-card border border-border/50"
+    <AppScreen
+      nav={false}
+      title={`Hej${profile?.display_name ? ` ${profile.display_name}` : ""}!`}
+      action={
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Inställningar"
+          className="h-11 w-11 shrink-0 rounded-full bg-card"
+          onClick={() => navigate("/settings")}
         >
-          <div className="flex items-center gap-2 mb-4">
-            <Clock className="w-5 h-5 text-primary" />
-            <h3 className="font-display font-bold text-lg text-foreground">Förfrågningar om skärmtid</h3>
-            {requests.length > 0 && (
-              <span className="ml-auto bg-primary/20 text-primary text-xs font-bold px-2 py-1 rounded-full">
-                {requests.length} väntande
-              </span>
-            )}
-          </div>
+          <Settings className="h-5 w-5" />
+        </Button>
+      }
+    >
+      {requests.length > 0 && (
+        <section aria-labelledby="requests-heading" className="space-y-3">
+          <h2 id="requests-heading" className="flex items-center gap-2 font-display text-lg font-semibold">
+            Förfrågningar
+            <span className="rounded-full bg-primary px-2 font-body text-sm font-extrabold text-primary-foreground">
+              {requests.length}
+            </span>
+          </h2>
+          {requests.map((request) => (
+            <RequestCard
+              key={request.id}
+              request={request}
+              busy={busyRequest === request.id}
+              onApprove={(minutes) => void approve(request, minutes)}
+              onDecline={() => void decline(request)}
+            />
+          ))}
+        </section>
+      )}
 
-          {requests.length === 0 ? (
-            <div className="text-center py-8">
-              <Clock className="w-10 h-10 mx-auto mb-3 text-muted-foreground opacity-50" />
-              <p className="text-muted-foreground">Inga väntande förfrågningar</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {requests.map((request, index) => {
-                const currentMinutes = editingMinutes[request.id] ?? request.requestedMinutes;
-                const isModified = currentMinutes !== request.requestedMinutes;
-                
-                return (
-                  <motion.div
-                    key={request.id}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                    className="p-4 bg-muted/30 rounded-xl border border-border/50"
-                  >
-                    <div className="flex items-center gap-4 mb-3">
-                      <div className="w-10 h-10 rounded-full gradient-activity flex items-center justify-center text-lg font-bold text-primary-foreground">
-                        {request.childName.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium text-foreground">{request.childName}</p>
-                        <p className="text-sm text-muted-foreground">
-                          Begärde {request.requestedMinutes} minuter
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* Adjustable Minutes */}
-                    <div className="flex items-center justify-between bg-card/50 rounded-lg p-3 mb-3">
-                      <p className="text-sm text-muted-foreground">Ge:</p>
-                      <div className="flex items-center gap-3">
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => adjustRequestMinutes(request.id, request.requestedMinutes, -5)}
-                          className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-foreground hover:bg-muted/80"
-                          disabled={currentMinutes <= 5}
-                        >
-                          <Minus className="w-4 h-4" />
-                        </motion.button>
-                        <div className="text-center min-w-[60px]">
-                          <motion.span
-                            key={currentMinutes}
-                            initial={{ scale: 1.2 }}
-                            animate={{ scale: 1 }}
-                            className={`text-xl font-bold ${isModified ? 'text-primary' : 'text-foreground'}`}
-                          >
-                            {currentMinutes}
-                          </motion.span>
-                          <span className="text-sm text-muted-foreground ml-1">min</span>
-                        </div>
-                        <motion.button
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => adjustRequestMinutes(request.id, request.requestedMinutes, 5)}
-                          className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-foreground hover:bg-muted/80"
-                          disabled={currentMinutes >= 120}
-                        >
-                          <Plus className="w-4 h-4" />
-                        </motion.button>
-                      </div>
-                    </div>
-                    
-                    {isModified && (
-                      <p className="text-xs text-primary mb-3 text-center">
-                        Ändrat från {request.requestedMinutes} till {currentMinutes} minuter
-                      </p>
-                    )}
-                    
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="flex-1 text-destructive hover:bg-destructive/10"
-                        onClick={() => handleDeclineRequest(request)}
-                        disabled={processingRequest === request.id}
-                      >
-                        {processingRequest === request.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <>
-                            <X className="w-4 h-4 mr-1" />
-                            Avslå
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        size="sm"
-                        className="flex-1 gradient-activity"
-                        onClick={() => handleAcceptRequest(request)}
-                        disabled={processingRequest === request.id}
-                      >
-                        {processingRequest === request.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Check className="w-4 h-4 mr-1" />
-                            Godkänn {currentMinutes} min
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </div>
-          )}
-        </motion.div>
-          </>
+      <section aria-labelledby="children-heading" className="space-y-3">
+        <h2 id="children-heading" className="font-display text-lg font-semibold">Dina barn</h2>
+        {loading ? (
+          <div className="flex justify-center py-10">
+            <Loader2 className="h-7 w-7 animate-spin text-primary" aria-label="Laddar" />
+          </div>
+        ) : children.length === 0 ? (
+          <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+            Inga barn är kopplade ännu. Lägg till ditt barn för att se aktivitet och svara på förfrågningar om tid.
+          </p>
         ) : (
-          <ScreenTimeInsights 
-            children={children.map(c => ({ id: c.id, name: c.name, avatar: c.avatar }))} 
-          />
+          children.map((child) => (
+            <ChildSummaryCard
+              key={child.id}
+              child={child}
+              onOpen={() => navigate(`/parent?barn=${child.id}`)}
+              onGive={() => setGiveTo(child)}
+            />
+          ))
         )}
-      </main>
-    </div>
+        <button
+          type="button"
+          onClick={() => navigate("/parent/add-child")}
+          className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-muted-foreground/40 font-semibold transition-colors hover:bg-card"
+        >
+          <UserPlus className="h-5 w-5 text-primary" aria-hidden="true" />
+          Lägg till barn
+        </button>
+      </section>
+
+      {giveDrawer}
+    </AppScreen>
   );
 }

@@ -9,6 +9,7 @@ import {
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import { MotionConfig } from "framer-motion";
 
 import appCss from "../styles.css?url";
 import { Toaster } from "@/components/ui/sonner";
@@ -187,10 +188,13 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <Toaster />
+        <Toaster position="top-center" mobileOffset={{ top: "calc(env(safe-area-inset-top) + 0.5rem)" }} />
         <AuthProvider>
-          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-          <Outlet />
+          {/* Respect the iPhone "Reduce Motion" setting for every framer-motion animation. */}
+          <MotionConfig reducedMotion="user">
+            {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+            <Outlet />
+          </MotionConfig>
         </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>

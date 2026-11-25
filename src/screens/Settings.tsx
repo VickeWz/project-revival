@@ -1,291 +1,158 @@
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
-import { 
-  ArrowLeft, 
-  Heart, 
-  Bell, 
-  Moon, 
-  Shield, 
-  HelpCircle,
-  ChevronRight,
-  Activity,
-  LogOut,
-  Target,
-  Trophy,
-  Clock,
-  Zap,
-  MapPin
-} from "lucide-react";
-import { useNavigate } from "@/lib/router-compat";
+import { useEffect, useState, type ReactNode } from "react";
+import { ChevronRight, Clock, Heart, HelpCircle, LogOut, Shield, Target, User } from "lucide-react";
 import { toast } from "sonner";
-import { healthKitService } from "@/services/healthKit";
-import { notificationService } from "@/services/notifications";
+import { Switch } from "@/components/ui/switch";
+import { AppScreen } from "@/components/layout/AppScreen";
+import { ActivityGoalModal } from "@/components/settings/ActivityGoalModal";
 import { useAuth } from "@/hooks/useAuth";
 import { useActivityGoal } from "@/hooks/useActivityGoal";
-import { ActivityGoalModal } from "@/components/settings/ActivityGoalModal";
+import { useNavigate } from "@/lib/router-compat";
+import { healthKitService } from "@/services/healthKit";
 
-interface SettingItemProps {
-  icon: React.ReactNode;
-  title: string;
-  description?: string;
-  action?: React.ReactNode;
-  onClick?: () => void;
-}
-
-function SettingItem({ icon, title, description, action, onClick }: SettingItemProps) {
-  return (
-    <div
-      className={`flex items-center justify-between p-4 rounded-xl bg-card border border-border/50 ${onClick ? 'cursor-pointer active:scale-[0.98] transition-transform' : ''}`}
-      onClick={onClick}
-    >
-      <div className="flex items-center gap-4">
-        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-primary">
-          {icon}
-        </div>
-        <div>
-          <p className="font-medium text-foreground">{title}</p>
-          {description && (
-            <p className="text-sm text-muted-foreground">{description}</p>
-          )}
-        </div>
-      </div>
-      {action || (onClick && <ChevronRight className="w-5 h-5 text-muted-foreground" />)}
-    </div>
-  );
-}
-
+/**
+ * Settings for both roles. The child sees Health and the step goal (both live on the child's
+ * phone); the parent sees the account. Support and signing out are shared.
+ */
 export default function Settings() {
   const navigate = useNavigate();
-  const { signOut } = useAuth();
+  const { profile, signOut } = useAuth();
+  const isChild = profile?.role === "child";
   const { dailyStepGoal, updateGoal } = useActivityGoal();
   const [healthKitEnabled, setHealthKitEnabled] = useState(false);
   const [isHealthKitAvailable] = useState(healthKitService.isAvailable());
   const [goalModalOpen, setGoalModalOpen] = useState(false);
-  
-  // Permission states
-  const [pushEnabled, setPushEnabled] = useState(false);
-  const [locationEnabled, setLocationEnabled] = useState(false);
-  
-  // Notification states
-  const [challengeAlerts, setChallengeAlerts] = useState(true);
-  const [dailyReminders, setDailyReminders] = useState(true);
-  const [friendActivity, setFriendActivity] = useState(false);
-  const [parentRequests, setParentRequests] = useState(true);
+
+  useEffect(() => {
+    if (isHealthKitAvailable) setHealthKitEnabled(localStorage.getItem("healthkit_enabled") === "true");
+  }, [isHealthKitAvailable]);
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/');
+    navigate("/");
   };
-
-  useEffect(() => {
-    const checkHealthKitStatus = async () => {
-      if (isHealthKitAvailable) {
-        const storedStatus = localStorage.getItem('healthkit_enabled');
-        setHealthKitEnabled(storedStatus === 'true');
-      }
-    };
-
-    const checkNotificationStatus = () => {
-      if ('Notification' in window) {
-        setPushEnabled(Notification.permission === 'granted');
-      }
-      // Load saved notification preferences
-      setChallengeAlerts(localStorage.getItem('notif_challenges') !== 'false');
-      setDailyReminders(localStorage.getItem('notif_reminders') !== 'false');
-      setFriendActivity(localStorage.getItem('notif_friends') === 'true');
-      setParentRequests(localStorage.getItem('notif_parent') !== 'false');
-    };
-
-    const checkLocationStatus = () => {
-      const storedLocation = localStorage.getItem('location_enabled');
-      setLocationEnabled(storedLocation === 'true');
-    };
-
-    checkHealthKitStatus();
-    checkNotificationStatus();
-    checkLocationStatus();
-  }, [isHealthKitAvailable]);
 
   const handleHealthKitToggle = async (enabled: boolean) => {
-    if (enabled) {
-      try {
-        const authorized = await healthKitService.requestAuthorization();
-        if (authorized) {
-          setHealthKitEnabled(true);
-          localStorage.setItem('healthkit_enabled', 'true');
-          toast.success('Åtkomst till Hälsa begärd!', {
-            description: 'Dina hälsouppgifter kan nu hämtas.',
-          });
-        } else {
-          toast.error('Ingen åtkomst till Hälsa', {
-            description: 'Tillåt Hälsa i iPhones inställningar.',
-          });
-        }
-      } catch (error) {
-        toast.error('Kunde inte ansluta till Hälsa', {
-          description: 'Försök igen eller kontrollera iPhones inställningar.',
-        });
-      }
-    } else {
+    if (!enabled) {
       setHealthKitEnabled(false);
-      localStorage.setItem('healthkit_enabled', 'false');
-      toast.success('Hälsa är avstängt');
+      localStorage.setItem("healthkit_enabled", "false");
+      toast.success("Hälsa är avstängt");
+      return;
     }
-  };
-
-  const handlePushToggle = async (enabled: boolean) => {
-    if (enabled) {
-      const granted = await notificationService.requestPermission();
-      if (granted) {
-        setPushEnabled(true);
-        toast.success('Notifications enabled!');
+    try {
+      if (await healthKitService.requestAuthorization()) {
+        setHealthKitEnabled(true);
+        localStorage.setItem("healthkit_enabled", "true");
+        toast.success("Åtkomst till Hälsa begärd!", { description: "Dina steg kan nu hämtas." });
       } else {
-        toast.error('Notification permission denied');
+        toast.error("Ingen åtkomst till Hälsa", { description: "Tillåt Hälsa i iPhones inställningar." });
       }
-    } else {
-      setPushEnabled(false);
-      toast.success('Notifications disabled');
+    } catch {
+      toast.error("Kunde inte ansluta till Hälsa", { description: "Försök igen eller kontrollera iPhones inställningar." });
     }
-  };
-
-  const handleLocationToggle = async (enabled: boolean) => {
-    if (enabled) {
-      try {
-        const result = await new Promise<GeolocationPosition>((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 10000,
-          });
-        });
-        setLocationEnabled(true);
-        localStorage.setItem('location_enabled', 'true');
-        toast.success('Location enabled!', {
-          description: 'You can now get location-based challenges.',
-        });
-      } catch (error) {
-        toast.error('Location access denied', {
-          description: 'Please enable location in your device settings.',
-        });
-      }
-    } else {
-      setLocationEnabled(false);
-      localStorage.setItem('location_enabled', 'false');
-      toast.success('Location disabled');
-    }
-  };
-
-  const handleNotificationPref = (key: string, value: boolean, setter: (v: boolean) => void) => {
-    setter(value);
-    localStorage.setItem(key, value.toString());
-    toast.success(value ? 'Enabled' : 'Disabled');
   };
 
   return (
-    <div className="min-h-screen bg-background pb-8">
-      {/* Header */}
-      <header className="sticky top-0 z-50 gradient-glass border-b border-border/50">
-        <div className="max-w-lg mx-auto px-6 py-4 flex items-center gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <h1 className="font-display font-bold text-xl text-foreground">Inställningar</h1>
-        </div>
-      </header>
+    <AppScreen
+      nav={isChild}
+      back={{ label: isChild ? "Profil" : "Översikt", onClick: () => navigate(isChild ? "/profile" : "/parent") }}
+      title="Inställningar"
+    >
+      {isChild ? (
+        <Group title="Hälsa och aktivitet">
+          <Row
+            icon={<Heart className="h-5 w-5" />}
+            title="Hälsa"
+            description={isHealthKitAvailable ? "Hämta steg och distans" : "Endast tillgängligt på iPhone"}
+            action={
+              <Switch
+                aria-label="Hälsa"
+                checked={healthKitEnabled}
+                onCheckedChange={(enabled) => void handleHealthKitToggle(enabled)}
+                disabled={!isHealthKitAvailable}
+              />
+            }
+          />
+          <Row
+            icon={<Target className="h-5 w-5" />}
+            title="Dagligt stegmål"
+            description={`${dailyStepGoal.toLocaleString("sv-SE")} steg`}
+            onClick={() => setGoalModalOpen(true)}
+          />
+          <Row icon={<Clock className="h-5 w-5" />} title="Skärmtid från steg" description="200 steg = 1 minut" />
+        </Group>
+      ) : (
+        <Group title="Konto">
+          <Row icon={<User className="h-5 w-5" />} title="Namn" description={profile?.display_name ?? ""} />
+        </Group>
+      )}
 
-      <main className="max-w-lg mx-auto px-6 py-8">
-        {/* Health & Activity Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h2 className="font-display font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">
-            Hälsa och aktivitet
-          </h2>
-          <div className="space-y-3">
-            <SettingItem
-              icon={<Heart className="w-5 h-5" />}
-              title="Hälsa"
-              description={isHealthKitAvailable ? "Hämta steg, distans och aktivitet" : "Endast tillgängligt på iPhone"}
-              action={
-                <Switch
-                  checked={healthKitEnabled}
-                  onCheckedChange={handleHealthKitToggle}
-                  disabled={!isHealthKitAvailable}
-                />
-              }
-            />
-            <SettingItem
-              icon={<Target className="w-5 h-5" />}
-              title="Dagligt stegmål"
-              description={`${dailyStepGoal.toLocaleString("sv-SE")} steg`}
-              onClick={() => setGoalModalOpen(true)}
-            />
-            <SettingItem icon={<Clock className="w-5 h-5" />} title="Skärmtid från steg" description="200 steg = 1 minut" />
-          </div>
-        </motion.div>
+      <Group title="Support">
+        <Row icon={<Shield className="h-5 w-5" />} title="Integritet" onClick={() => navigate("/privacy-policy")} />
+        <Row icon={<HelpCircle className="h-5 w-5" />} title="Hjälp och support" onClick={() => navigate("/help-support")} />
+      </Group>
 
-        {/* Support Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="mb-8"
-        >
-          <h2 className="font-display font-semibold text-sm text-muted-foreground uppercase tracking-wider mb-4">
-            Support
-          </h2>
-          <div className="space-y-3">
-            <SettingItem
-              icon={<Shield className="w-5 h-5" />}
-              title="Integritet"
-              onClick={() => navigate('/privacy-policy')}
-            />
-            <SettingItem
-              icon={<HelpCircle className="w-5 h-5" />}
-              title="Hjälp och support"
-              onClick={() => navigate('/help-support')}
-            />
-          </div>
-        </motion.div>
+      <button
+        type="button"
+        onClick={() => void handleSignOut()}
+        className="flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card font-semibold text-destructive transition-colors hover:bg-destructive/10"
+      >
+        <LogOut className="h-5 w-5" aria-hidden="true" />
+        Logga ut
+      </button>
+      <p className="text-center text-sm text-muted-foreground">GameRun v1.0.0</p>
 
-        {/* Logout Button */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="mb-8"
-        >
-          <Button
-            variant="destructive"
-            className="w-full h-12 font-display font-semibold"
-            onClick={handleSignOut}
-          >
-            <LogOut className="w-5 h-5 mr-2" />
-            Logga ut
-          </Button>
-        </motion.div>
+      {isChild && (
+        <ActivityGoalModal
+          open={goalModalOpen}
+          onOpenChange={setGoalModalOpen}
+          currentGoal={dailyStepGoal}
+          onSave={updateGoal}
+        />
+      )}
+    </AppScreen>
+  );
+}
 
-        {/* App Info */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="text-center text-muted-foreground text-sm"
-        >
-          <p>GameRun v1.0.0</p>
-        </motion.div>
-      </main>
+function Group({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <section className="space-y-2.5">
+      <h2 className="ml-1 text-xs font-extrabold uppercase tracking-wider text-muted-foreground">{title}</h2>
+      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">{children}</ul>
+    </section>
+  );
+}
 
-      {/* Activity Goal Modal */}
-      <ActivityGoalModal
-        open={goalModalOpen}
-        onOpenChange={setGoalModalOpen}
-        currentGoal={dailyStepGoal}
-        onSave={updateGoal}
-      />
-    </div>
+interface RowProps {
+  icon: ReactNode;
+  title: string;
+  description?: string;
+  action?: ReactNode;
+  onClick?: () => void;
+}
+
+function Row({ icon, title, description, action, onClick }: RowProps) {
+  const content = (
+    <>
+      <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-primary">
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-semibold text-foreground">{title}</span>
+        {description && <span className="block text-sm text-muted-foreground">{description}</span>}
+      </span>
+      {action ?? (onClick && <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />)}
+    </>
+  );
+  const className = "flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left";
+  return (
+    <li>
+      {onClick ? (
+        <button type="button" onClick={onClick} className={`${className} transition-colors hover:bg-muted/50`}>
+          {content}
+        </button>
+      ) : (
+        <div className={className}>{content}</div>
+      )}
+    </li>
   );
 }

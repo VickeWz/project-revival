@@ -1,351 +1,78 @@
-// @ts-nocheck -- imported code written for a looser TypeScript config
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import type { ReactNode } from "react";
+import { ChevronRight, Loader2, Settings, Target, Users } from "lucide-react";
+import { AppScreen } from "@/components/layout/AppScreen";
 import { useAuth } from "@/hooks/useAuth";
-import { BottomNav } from "@/components/BottomNav";
-import { Settings, Edit2, Camera, Star, Clock, Users, Loader2, Minus, Plus, Target, ChevronRight } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { useNavigate } from "@/lib/router-compat";
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
 import { useActivityGoal } from "@/hooks/useActivityGoal";
+import { useParentLink } from "@/hooks/useParentLink";
+import { useNavigate } from "@/lib/router-compat";
 
-interface ParentInfo {
-  id: string;
-  name: string;
-  avatar: string | null;
-}
-
+/** Who you are and your settings. Asking a parent for time now lives next to the balance on Hem. */
 const Profile = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const { dailyStepGoal } = useActivityGoal();
-  const [parentInfo, setParentInfo] = useState<ParentInfo | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [requesting, setRequesting] = useState(false);
-  const [pendingRequest, setPendingRequest] = useState(false);
-  const [requestMinutes, setRequestMinutes] = useState(15);
-
-  useEffect(() => {
-    if (profile?.id) {
-      fetchParentInfo();
-      checkPendingRequest();
-
-      // Subscribe to realtime updates for parent-child links
-      const channel = supabase
-        .channel('parent-child-links')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'parent_child_links',
-            filter: `child_id=eq.${profile.id}`,
-          },
-          () => {
-            fetchParentInfo();
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [profile?.id]);
-
-  const fetchParentInfo = async () => {
-    if (!profile?.id) return;
-
-    try {
-      // Find parent linked to this child
-      const { data: link, error: linkError } = await supabase
-        .from("parent_child_links")
-        .select("parent_id")
-        .eq("child_id", profile.id)
-        .maybeSingle();
-
-      if (linkError) {
-        console.error("Error fetching parent link:", linkError);
-        setLoading(false);
-        return;
-      }
-
-      if (!link) {
-        setLoading(false);
-        return;
-      }
-
-      // Fetch parent profile
-      const { data: parentProfile, error: profileError } = await supabase
-        .from("profiles")
-        .select("id, display_name, avatar_url")
-        .eq("id", link.parent_id)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error("Error fetching parent profile:", profileError);
-        setLoading(false);
-        return;
-      }
-
-      if (parentProfile) {
-        setParentInfo({
-          id: parentProfile.id,
-          name: parentProfile.display_name,
-          avatar: parentProfile.avatar_url,
-        });
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const checkPendingRequest = async () => {
-    if (!profile?.id) return;
-
-    const { data } = await supabase
-      .from("screen_time_requests")
-      .select("id")
-      .eq("child_id", profile.id)
-      .eq("status", "pending")
-      .maybeSingle();
-
-    setPendingRequest(!!data);
-  };
-
-  const handleAskForTime = async () => {
-    if (!profile?.id || !parentInfo?.id) return;
-    if (requestMinutes < 5 || requestMinutes > 120) {
-      toast.error("Välj mellan 5 och 120 minuter");
-      return;
-    }
-
-    setRequesting(true);
-    try {
-      const { error } = await supabase
-        .from("screen_time_requests")
-        .insert({
-          child_id: profile.id,
-          parent_id: parentInfo.id,
-          requested_minutes: requestMinutes,
-          status: "pending",
-        });
-
-      if (error) throw error;
-
-      toast.success("Förfrågan skickad!", {
-        description: `Din förälder ser din förfrågan om ${requestMinutes} minuter.`,
-      });
-      setPendingRequest(true);
-    } catch (error) {
-      console.error("Error sending request:", error);
-      toast.error("Kunde inte skicka förfrågan");
-    } finally {
-      setRequesting(false);
-    }
-  };
-
-  const adjustMinutes = (amount: number) => {
-    setRequestMinutes(prev => Math.max(5, Math.min(120, prev + amount)));
-  };
+  const { parent, loading } = useParentLink();
+  const name = profile?.display_name || "Användare";
 
   return (
-    <div className="min-h-screen bg-background pb-24">
-      {/* Header with gradient */}
-      <div className="relative">
-        <div className="absolute top-0 left-0 right-0 h-56 gradient-hero opacity-20" />
-        <motion.div
-          className="absolute top-10 right-10 w-40 h-40 rounded-full gradient-activity opacity-20 blur-3xl"
-          animate={{ scale: [1, 1.2, 1], opacity: [0.2, 0.3, 0.2] }}
-          transition={{ duration: 4, repeat: Infinity }}
-        />
-
-        <div className="relative px-6 pt-12">
-          <div className="flex items-center justify-end mb-8">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/settings")}
-              className="text-foreground hover:bg-primary/20"
-            >
-              <Settings className="w-5 h-5" />
-            </Button>
-          </div>
-
-          {/* Profile Card */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-card rounded-3xl p-6 shadow-card neon-border relative overflow-hidden"
-          >
-            <div className="absolute inset-0 gradient-glow opacity-30" />
-
-            <div className="relative">
-              <div className="flex items-center gap-4 mb-6">
-                <div className="relative">
-                  <motion.div
-                    className="w-20 h-20 rounded-full gradient-activity flex items-center justify-center text-3xl font-bold text-primary-foreground shadow-glow-primary"
-                    whileHover={{ scale: 1.05 }}
-                  >
-                    {profile?.display_name?.charAt(0).toUpperCase() || "U"}
-                  </motion.div>
-                </div>
-                <div className="flex-1">
-                  <h1 className="font-display text-2xl font-bold text-foreground">{profile?.display_name || "Användare"}</h1>
-                  <p className="text-muted-foreground text-sm">
-                    @{profile?.display_name?.toLowerCase().replace(/\s/g, "") || "user"}
-                  </p>
-                </div>
-              </div>
-
-              {/* Activity Goal */}
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6 }}
-                onClick={() => navigate("/settings")} className="cursor-pointer mt-4 bg-primary/10 rounded-2xl p-4 flex items-center justify-between neon-border"
-              >
-                <div className="flex items-center gap-3">
-                  <Target className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Dagligt stegmål</p>
-                    <p className="text-xs text-muted-foreground">Ändra i inställningarna</p>
-                  </div>
-                </div>
-                <p className="text-xl font-bold text-primary">{dailyStepGoal.toLocaleString("sv-SE")}</p>
-              </motion.div>
-            </div>
-          </motion.div>
+    <AppScreen title="Profil">
+      <section className="flex items-center gap-4">
+        <div
+          aria-hidden="true"
+          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary font-display text-2xl font-bold text-primary-foreground"
+        >
+          {name.charAt(0).toUpperCase()}
         </div>
-      </div>
-
-      {/* Parent Account Section */}
-      <div className="px-6 mt-4">
-        <div className="flex items-center gap-2 mb-4">
-          <Users className="w-5 h-5 text-primary" />
-          <h2 className="font-display text-lg font-semibold text-foreground">Min förälder</h2>
+        <div className="min-w-0">
+          <p className="truncate font-display text-xl font-bold">{name}</p>
+          <p className="text-sm text-muted-foreground">Barnkonto</p>
         </div>
+      </section>
 
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : !parentInfo ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center py-8 bg-card rounded-2xl border border-border/50"
-          >
-            <Users className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
-            <h3 className="font-display font-bold text-foreground mb-2">Ingen förälder kopplad</h3>
-            <p className="text-sm text-muted-foreground">Be din förälder att koppla ditt konto</p>
-          </motion.div>
-        ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-card rounded-2xl p-5 shadow-card neon-border"
-          >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="relative">
-                <motion.div
-                  className="w-14 h-14 rounded-full gradient-hero flex items-center justify-center text-xl font-bold text-primary-foreground"
-                  whileHover={{ scale: 1.05 }}
-                >
-                  {parentInfo.name.charAt(0).toUpperCase()}
-                </motion.div>
-              </div>
-              <div className="flex-1">
-                <h3 className="font-display font-bold text-lg text-foreground">{parentInfo.name}</h3>
-                <p className="text-sm text-muted-foreground">Föräldrakonto</p>
-              </div>
-            </div>
-
-            {/* Time Selector */}
-            {!pendingRequest && (
-              <div className="mb-4">
-                <p className="text-sm text-muted-foreground mb-3 text-center">Hur mycket tid behöver du?</p>
-                <div className="flex items-center justify-center gap-4">
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => adjustMinutes(-5)}
-                    className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-foreground hover:bg-muted/80"
-                    disabled={requestMinutes <= 5}
-                  >
-                    <Minus className="w-5 h-5" />
-                  </motion.button>
-                  <div className="text-center min-w-[100px]">
-                    <motion.p
-                      key={requestMinutes}
-                      initial={{ scale: 1.2 }}
-                      animate={{ scale: 1 }}
-                      className="text-4xl font-bold text-primary"
-                    >
-                      {requestMinutes}
-                    </motion.p>
-                    <p className="text-xs text-muted-foreground">minuter</p>
-                  </div>
-                  <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => adjustMinutes(5)}
-                    className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-foreground hover:bg-muted/80"
-                    disabled={requestMinutes >= 120}
-                  >
-                    <Plus className="w-5 h-5" />
-                  </motion.button>
-                </div>
-                <div className="flex justify-center gap-2 mt-3">
-                  {[15, 30, 45, 60].map((mins) => (
-                    <motion.button
-                      key={mins}
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setRequestMinutes(mins)}
-                      className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                        requestMinutes === mins
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground hover:bg-muted/80"
-                      }`}
-                    >
-                      {mins}m
-                    </motion.button>
-                  ))}
-                </div>
-              </div>
+      <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+        <li>
+          <Row icon={<Target className="h-5 w-5 text-primary" />} label="Dagligt stegmål" onClick={() => navigate("/settings")}>
+            <span className="font-semibold tabular-nums">{dailyStepGoal.toLocaleString("sv-SE")}</span>
+          </Row>
+        </li>
+        <li>
+          <Row icon={<Users className="h-5 w-5 text-primary" />} label="Förälder">
+            {loading ? (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-label="Laddar" />
+            ) : (
+              <span className="text-muted-foreground">{parent?.name ?? "Inte kopplad"}</span>
             )}
+          </Row>
+        </li>
+        <li>
+          <Row icon={<Settings className="h-5 w-5 text-primary" />} label="Inställningar" onClick={() => navigate("/settings")} />
+        </li>
+      </ul>
 
-            <div className="flex gap-3">
-              <Button
-                className="flex-1 gradient-activity hover:opacity-90"
-                onClick={handleAskForTime}
-                disabled={requesting || pendingRequest}
-              >
-                {requesting ? (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                ) : (
-                  <Clock className="w-4 h-4 mr-2" />
-                )}
-                {pendingRequest ? "Väntar på svar" : `Be om ${requestMinutes} min`}
-              </Button>
-            </div>
-
-            {pendingRequest && (
-              <p className="text-xs text-muted-foreground text-center mt-3">
-                Din förfrågan väntar på svar från din förälder.
-              </p>
-            )}
-          </motion.div>
-        )}
-      </div>
-
-      <BottomNav />
-    </div>
+      {!loading && !parent && (
+        <p className="text-sm text-muted-foreground">Be din förälder lägga till dig i sin GameRun-app.</p>
+      )}
+    </AppScreen>
   );
 };
+
+function Row({ icon, label, children, onClick }: { icon: ReactNode; label: string; children?: ReactNode; onClick?: () => void }) {
+  const content = (
+    <>
+      {icon}
+      <span className="flex-1 font-medium">{label}</span>
+      {children}
+      {onClick && <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />}
+    </>
+  );
+  const className = "flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left";
+  return onClick ? (
+    <button type="button" onClick={onClick} className={`${className} transition-colors hover:bg-muted/50`}>
+      {content}
+    </button>
+  ) : (
+    <div className={className}>{content}</div>
+  );
+}
 
 export default Profile;

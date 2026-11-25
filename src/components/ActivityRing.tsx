@@ -23,19 +23,20 @@ export const ActivityRing = ({
   return (
     <div className={`relative ${className}`} style={{ width: size, height: size }}>
       {/* Background ring */}
-      <svg className="absolute inset-0 -rotate-90" width={size} height={size}>
+      {/* --muted already holds a full hsl() colour, so it must not be wrapped in hsl() again. */}
+      <svg className="absolute inset-0 -rotate-90" width={size} height={size} aria-hidden="true">
         <circle
           cx={size / 2}
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="hsl(var(--muted))"
+          style={{ stroke: "var(--muted)" }}
           strokeWidth={strokeWidth}
         />
       </svg>
-      
+
       {/* Progress ring */}
-      <svg className="absolute inset-0 -rotate-90" width={size} height={size}>
+      <svg className="absolute inset-0 -rotate-90" width={size} height={size} aria-hidden="true">
         <motion.circle
           cx={size / 2}
           cy={size / 2}
@@ -44,6 +45,7 @@ export const ActivityRing = ({
           stroke="url(#activityGradient)"
           strokeWidth={strokeWidth}
           strokeLinecap="round"
+          strokeOpacity={progress > 0 ? 1 : 0}
           strokeDasharray={circumference}
           initial={{ strokeDashoffset: circumference }}
           animate={{ strokeDashoffset: offset }}
@@ -51,8 +53,8 @@ export const ActivityRing = ({
         />
         <defs>
           <linearGradient id="activityGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="hsl(160, 84%, 39%)" />
-            <stop offset="100%" stopColor="hsl(200, 85%, 55%)" />
+            <stop offset="0%" style={{ stopColor: "var(--reward)" }} />
+            <stop offset="100%" style={{ stopColor: "var(--primary)" }} />
           </linearGradient>
         </defs>
       </svg>

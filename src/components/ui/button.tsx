@@ -10,13 +10,14 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default: "bg-primary text-primary-foreground hover:opacity-90 shadow-glow-primary",
-        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        destructive: "bg-danger text-danger-foreground hover:bg-danger/90",
         outline: "border-2 border-primary bg-transparent text-primary hover:bg-primary hover:text-primary-foreground",
-        secondary: "bg-secondary text-secondary-foreground hover:opacity-90 shadow-glow-secondary",
+        // Neutral surface: white text on the light-blue --secondary only reached ~2.9:1 contrast.
+        secondary: "bg-muted text-foreground hover:bg-muted/70",
         ghost: "hover:bg-accent hover:text-accent-foreground",
         link: "text-primary underline-offset-4 hover:underline",
         hero: "gradient-activity text-primary-foreground shadow-glow-primary hover:scale-105 active:scale-100",
-        reward: "gradient-reward text-secondary-foreground shadow-glow-secondary hover:scale-105 active:scale-100",
+        reward: "bg-reward text-reward-foreground shadow-[0_8px_30px_-12px_var(--reward)] hover:opacity-90 active:scale-[0.98]",
         glass: "gradient-glass border border-border/50 text-foreground hover:border-primary/50",
       },
       size: {

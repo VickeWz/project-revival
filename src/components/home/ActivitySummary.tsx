@@ -39,12 +39,12 @@ export function ActivitySummary({ onSync }: { onSync: (data: HealthData) => void
   };
 
   return (
-    <section className="mb-6 border-y border-border py-5" aria-labelledby="activity-summary-heading">
+    <section className="rounded-3xl border border-border bg-card p-5" aria-labelledby="activity-summary-heading">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="activity-summary-heading" className="font-display font-semibold text-lg text-foreground flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" /> Dagens aktivitet
         </h2>
-        <Button variant="secondary" onClick={sync} disabled={busy}>
+        <Button variant="secondary" className="h-11" onClick={sync} disabled={busy}>
           {busy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
           {busy ? 'Synkar…' : 'Synka & sammanfatta'}
         </Button>

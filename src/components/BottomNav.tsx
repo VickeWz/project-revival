@@ -1,41 +1,50 @@
-import { NavLink } from "./NavLink";
-import { User, Home, Ticket } from "lucide-react";
+import { Home, User, Zap } from "lucide-react";
+import { Link, useLocation } from "@/lib/router-compat";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 
+// Three jobs, three tabs: see and use your time (Hem), earn more (Tjäna), you (Profil).
+// `also` lists pushed screens that belong to a tab (Inställningar opens from Profil).
 const navItems = [
-  { to: "/child", icon: Home, label: "Hem" },
-  { to: "/pass", icon: Ticket, label: "Pass" },
-  { to: "/profile", icon: User, label: "Profil" },
+  { to: "/child", icon: Home, label: "Hem", also: [] as string[] },
+  { to: "/pass", icon: Zap, label: "Tjäna", also: [] as string[] },
+  { to: "/profile", icon: User, label: "Profil", also: ["/settings"] },
 ];
+
 export const BottomNav = () => {
+  const { pathname } = useLocation();
+
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-xl border-t border-border/30 safe-area-pb z-50">
-      <div className="flex items-center justify-around py-2 px-2">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className="flex flex-col items-center gap-1 px-3 py-2 rounded-2xl transition-all text-muted-foreground relative"
-            activeClassName="text-primary"
-          >
-            {({ isActive }: { isActive: boolean }) => (
-              <>
-                {isActive && (
-                  <motion.div
-                    layoutId="navIndicator"
-                    className="absolute inset-0 gradient-glow rounded-2xl neon-border"
-                    initial={false}
-                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                  />
+    <nav
+      aria-label="Huvudmeny"
+      className="fixed inset-x-0 bottom-0 z-50 border-t border-border/60 bg-background/90 backdrop-blur-xl safe-bottom"
+    >
+      <ul className="mx-auto grid max-w-lg grid-cols-3">
+        {navItems.map(({ to, icon: Icon, label, also }) => {
+          const isActive = [to, ...also].some((path) => pathname === path || pathname.startsWith(`${path}/`));
+          return (
+            <li key={to}>
+              <Link
+                to={to}
+                aria-current={isActive ? "page" : undefined}
+                className={cn(
+                  "flex min-h-[60px] flex-col items-center justify-center gap-1 pt-2 pb-1.5 text-muted-foreground transition-colors",
+                  isActive && "text-primary",
                 )}
-                <item.icon className={cn("w-5 h-5 relative z-10 transition-all", isActive && "text-primary drop-shadow-[0_0_8px_hsl(200,100%,50%)]")} />
-                <span className={cn("text-[10px] font-semibold relative z-10", isActive && "text-primary")}>{item.label}</span>
-              </>
-            )}
-          </NavLink>
-        ))}
-      </div>
+              >
+                <span
+                  className={cn(
+                    "flex h-8 w-14 items-center justify-center rounded-full transition-colors",
+                    isActive && "bg-primary/15",
+                  )}
+                >
+                  <Icon className="h-6 w-6" aria-hidden="true" />
+                </span>
+                <span className="text-xs font-semibold">{label}</span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
     </nav>
   );
 };
