@@ -1,4 +1,6 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { PairingCode } from "@/components/PairingCode";
+import { Button } from "@/components/ui/button";
 import { ChevronRight, Loader2, Settings, Target, Users } from "lucide-react";
 import { AppScreen } from "@/components/layout/AppScreen";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +15,7 @@ const Profile = () => {
   const { dailyStepGoal } = useActivityGoal();
   const { parent, loading } = useParentLink();
   const name = profile?.display_name || "Användare";
+  const [pairingOpen, setPairingOpen] = useState(false);
 
   return (
     <AppScreen title="Profil">
@@ -45,13 +48,18 @@ const Profile = () => {
           </Row>
         </li>
         <li>
+          <Button variant="ghost" className="h-14 w-full justify-start rounded-none px-4" onClick={() => setPairingOpen(true)}>
+            <Users className="h-5 w-5 text-primary" />
+            <span className="flex-1 text-left">Koppla förälder</span>
+            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          </Button>
+        </li>
+        <li>
           <Row icon={<Settings className="h-5 w-5 text-primary" />} label="Inställningar" onClick={() => navigate("/settings")} />
         </li>
       </ul>
 
-      {!loading && !parent && (
-        <p className="text-sm text-muted-foreground">Be din förälder lägga till dig i sin GameRun-app.</p>
-      )}
+      <PairingCode open={pairingOpen} onOpenChange={setPairingOpen} />
     </AppScreen>
   );
 };

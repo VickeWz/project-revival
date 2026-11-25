@@ -13,7 +13,6 @@ const nativeTree = path.resolve(src, "native/routeTree.gen.js");
 // Swap web-only modules for bundled-app versions.
 function nativeSwaps(): Plugin {
   const swaps: Record<string, string> = {
-    [path.resolve(src, "lib/link-child.functions")]: path.resolve(src, "native/link-child.ts"),
     [path.resolve(src, "lib/activity-summary.functions")]: path.resolve(src, "native/activity-summary.ts"),
     "@tanstack/react-start": path.resolve(src, "native/react-start-shim.ts"),
   };

@@ -151,6 +151,35 @@ export type Database = {
           },
         ]
       }
+      child_pairing_codes: {
+        Row: {
+          child_id: string
+          code_hash: string
+          consumed_at: string | null
+          expires_at: string
+        }
+        Insert: {
+          child_id: string
+          code_hash: string
+          consumed_at?: string | null
+          expires_at: string
+        }
+        Update: {
+          child_id?: string
+          code_hash?: string
+          consumed_at?: string | null
+          expires_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "child_pairing_codes_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       completed_activity_passes: {
         Row: {
           earned_minutes: number
@@ -268,6 +297,32 @@ export type Database = {
             foreignKeyName: "parent_child_links_parent_id_fkey"
             columns: ["parent_id"]
             isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      parent_pairing_attempts: {
+        Row: {
+          blocked_until: string | null
+          failed_attempts: number
+          parent_id: string
+        }
+        Insert: {
+          blocked_until?: string | null
+          failed_attempts?: number
+          parent_id: string
+        }
+        Update: {
+          blocked_until?: string | null
+          failed_attempts?: number
+          parent_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "parent_pairing_attempts_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: true
             referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
@@ -487,6 +542,8 @@ export type Database = {
         }
         Returns: Json
       }
+      consume_child_pairing_code: { Args: { p_code: string }; Returns: Json }
+      create_child_pairing_code: { Args: never; Returns: Json }
       grant_screen_time: {
         Args: {
           p_child_id: string

@@ -1,6 +1,4 @@
-// @ts-nocheck -- imported code written for a looser TypeScript config
-import { linkChild } from "@/lib/link-child.functions";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,16 +7,17 @@ import { UserPlus, Loader2, AlertCircle } from "lucide-react";
 import { useNavigate } from "@/lib/router-compat";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { z } from "zod";
-
-const linkChildSchema = z.object({
-  email: z.string().trim().email("Ange en giltig e-postadress"),
-  password: z.string().min(1, "Ange lösenord"),
-});
+import { pairingCodeSchema, pairingResultSchema, secondsLeft } from "@/lib/pairing-code";
 
 export default function AddChild() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [code, setCode] = useState("");
+  const [blockedUntil, setBlockedUntil] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now());
+  const blockedSeconds = blockedUntil ? secondsLeft(blockedUntil, now) : 0;
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -28,53 +27,49 @@ export default function AddChild() {
     setError(null);
 
     // Validate input
-    const validation = linkChildSchema.safeParse({ email, password });
+    const validation = pairingCodeSchema.safeParse(code);
     if (!validation.success) {
-      setError(validation.error.errors[0].message);
+      setError("Ange en sexsiffrig kod");
       return;
     }
 
     setLoading(true);
 
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        setError("Logga in för att lägga till ett barn");
+      const { data, error: failure } = await supabase.rpc("consume_child_pairing_code", { p_code: code });
+      if (failure) throw failure;
+      const result = pairingResultSchema.parse(data);
+      if (result.status === "blocked") {
+        setBlockedUntil(result.blockedUntil);
+        setNow(Date.now());
+        setError(null);
         return;
       }
-
-      const result = await linkChild({
-        data: { childEmail: email.trim().toLowerCase(), childPassword: password },
-      });
-      const response = { data: result as { error?: string; message?: string; childName?: string } };
-
-      if (response.data?.error) {
-        setError("Kunde inte koppla kontot. Kontrollera barnets uppgifter.");
+      if (result.status === "invalid") {
+        setError(`Koden är felaktig, utgången eller redan använd. ${result.attemptsRemaining} försök kvar.`);
         return;
       }
 
       toast.success("Barnets konto är kopplat!", {
-        description: `${response.data?.childName || "Barnet"} har kopplats till ditt konto.`,
+        description: `${result.childName} har kopplats till ditt konto.`,
       });
 
       navigate("/parent");
     } catch (err) {
-      console.error("Error linking child:", err);
       setError("Ett oväntat fel uppstod. Försök igen.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Linking still verifies the child's own login (link-child server function). A code shown in the
-  // child's app would avoid sharing the password, but needs a backend change first.
   return (
     <AppScreen nav={false} back={{ label: "Översikt", onClick: () => navigate("/parent") }} title="Lägg till barn">
       <p className="-mt-4 text-muted-foreground">
-        Barnet behöver redan ha ett GameRun-konto. Skriv in barnets inloggning en gång för att koppla ihop kontona.
+        Kopplingskod från barnets Profil → Koppla förälder.
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-5">
+        {blockedSeconds > 0 && <p role="alert" className="text-sm text-destructive">Koppling spärrad. Försök igen om {Math.floor(blockedSeconds / 60)}:{String(blockedSeconds % 60).padStart(2, "0")}.</p>}
         {error && (
           <p role="alert" className="flex items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-foreground">
             <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden="true" />
@@ -83,40 +78,30 @@ export default function AddChild() {
         )}
 
         <div className="space-y-2">
-          <Label htmlFor="email" className="font-semibold text-foreground">Barnets e-post</Label>
+          <Label htmlFor="pairing-code" className="font-semibold text-foreground">Sexsiffrig kod</Label>
           <Input
-            id="email"
-            type="email"
-            placeholder="barn@epost.se"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            id="pairing-code"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]{6}"
+            maxLength={6}
+            value={code}
+            onChange={(e) => setCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
             className="h-14 rounded-2xl border-border bg-card text-base"
-            disabled={loading}
+            disabled={loading || blockedSeconds > 0}
             autoComplete="off"
           />
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="password" className="font-semibold text-foreground">Barnets lösenord</Label>
-          <Input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="h-14 rounded-2xl border-border bg-card text-base"
-            disabled={loading}
-            autoComplete="off"
-          />
-        </div>
-
-        <Button type="submit" disabled={loading || !email || !password} className="h-14 w-full text-base">
+        <Button type="submit" disabled={loading || code.length !== 6 || blockedSeconds > 0} className="h-14 w-full text-base">
           {loading ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : <UserPlus className="h-5 w-5" aria-hidden="true" />}
           {loading ? "Kopplar…" : "Koppla konto"}
         </Button>
       </form>
 
       <ul className="space-y-1.5 rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
-        <li>• Lösenordet används bara för att bekräfta kontot och sparas inte.</li>
+        <li>• Koden gäller i 10 minuter och kan bara användas en gång.</li>
+        <li>• Efter 5 felaktiga försök spärras koppling i 15 minuter.</li>
         <li>• När kontona är kopplade ser du saldo och sparad aktivitet och kan svara på förfrågningar om tid.</li>
         <li>• Du kan koppla bort barnet när som helst.</li>
       </ul>

@@ -57,6 +57,20 @@
       "when": 1795634275409,
       "tag": "0007_shared_profile_step_goal",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795634500016,
+      "tag": "0008_child_pairing_codes",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1795634536945,
+      "tag": "0009_consume_pairing_code_with_account_lockout",
+      "breakpoints": true
     }
   ]
 }

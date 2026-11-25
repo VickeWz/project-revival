@@ -52,6 +52,7 @@ export function useParentLink() {
     };
 
     void load();
+    const timer = setInterval(() => { if (!document.hidden) void load(); }, 3000);
     const channel = supabase
       .channel(`parent-child-links-${childId}`)
       .on(
@@ -63,6 +64,7 @@ export function useParentLink() {
 
     return () => {
       cancelled = true;
+      clearInterval(timer);
       void supabase.removeChannel(channel);
     };
   }, [profile?.id]);
