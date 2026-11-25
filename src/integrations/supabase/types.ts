@@ -277,6 +277,7 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          daily_step_goal: number | null
           display_name: string
           id: string
           onboarding_complete: boolean
@@ -287,6 +288,7 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          daily_step_goal?: number | null
           display_name: string
           id?: string
           onboarding_complete?: boolean
@@ -297,6 +299,7 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          daily_step_goal?: number | null
           display_name?: string
           id?: string
           onboarding_complete?: boolean
@@ -499,6 +502,10 @@ export type Database = {
       redeem_screen_time: {
         Args: { p_device_id: string; p_id: string; p_minutes: number }
         Returns: Json
+      }
+      set_daily_step_goal: {
+        Args: { p_goal: number; p_import?: boolean; p_profile_id: string }
+        Returns: number
       }
     }
     Enums: {

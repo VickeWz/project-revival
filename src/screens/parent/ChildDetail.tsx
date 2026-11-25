@@ -1,4 +1,6 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { useActivityGoal } from "@/hooks/useActivityGoal";
+import { ActivityGoalModal } from "@/components/settings/ActivityGoalModal";
 import { format, subDays } from "date-fns";
 import { sv } from "date-fns/locale";
 import { Brain, CirclePlus, Footprints, Loader2, LockKeyhole } from "lucide-react";
@@ -34,6 +36,8 @@ const genitive = (name: string) => (/[sxz]$/i.test(name) ? name : `${name}s`);
 
 /** One child for the parent: balance and giving time, today, the last seven days and the rules. */
 export function ChildDetail({ child, refreshKey, onBack, onGive, onRemove }: ChildDetailProps) {
+  const { dailyStepGoal, updateGoal, loading: goalLoading, error: goalError } = useActivityGoal(child.id);
+  const [goalOpen, setGoalOpen] = useState(false);
   const { days, loading } = useChildWeek(child.id, refreshKey);
   const today = localDay(new Date());
   const week = Array.from({ length: 7 }, (_, index) => {
@@ -149,6 +153,12 @@ export function ChildDetail({ child, refreshKey, onBack, onGive, onRemove }: Chi
           Regler för {child.name}
         </h2>
         <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+          <li>
+            <Button variant="ghost" disabled={goalLoading || Boolean(goalError)} onClick={() => setGoalOpen(true)} className="h-auto min-h-16 w-full justify-between rounded-none px-4 py-3 text-left">
+              <span><span className="block font-semibold">Dagligt stegmål</span><span className="block text-sm text-muted-foreground">{goalLoading ? "Laddar…" : goalError ? "Kunde inte hämta stegmålet" : `${dailyStepGoal.toLocaleString("sv-SE")} steg`}</span></span>
+              <span className="text-primary">Ändra</span>
+            </Button>
+          </li>
           <InfoRow icon={<Footprints className="h-5 w-5 text-reward" />} title="Skärmtid från steg" text="200 steg = 1 minut" />
           <InfoRow
             icon={<LockKeyhole className="h-5 w-5 text-primary" />}
@@ -164,6 +174,7 @@ export function ChildDetail({ child, refreshKey, onBack, onGive, onRemove }: Chi
         </ul>
       </section>
 
+      <ActivityGoalModal open={goalOpen} onOpenChange={setGoalOpen} currentGoal={dailyStepGoal} onSave={updateGoal} />
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button variant="ghost" className="h-12 w-full text-destructive hover:bg-destructive/10 hover:text-destructive">

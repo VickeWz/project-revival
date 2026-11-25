@@ -1,3 +1,4 @@
+- [x] Spara stegmålet på profilen, överför telefonens tidigare mål en gång och låt kopplad förälder se och ändra målet under barnets regler; 13 tester passerar och förälderns sparande samt läsning efter omladdning är verifierade.
 - [x] Lägg till begränsad föräldraläsrätt och etiketten för aktiva upplåsningsfönster på barnkort och barnsida; regeln finns i databasen och 11 tester passerar.
 - [ ] Verifiera förälderns upplåsningsetikett i inloggad visning. Blockerat: testladdningen hänger i förhandsvisningen trots återställda sidfiler; verklig iPhone-upplåsning saknar fysisk testenhet.
 - [x] Läs in grenen ny-layout; 41 tester passerar och inloggad startsida, Tjäna-flikar samt profil kontrollerade på dator och mobil utan runtime-fel.

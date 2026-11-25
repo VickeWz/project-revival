@@ -10,14 +10,13 @@ import { useNavigate } from "@/lib/router-compat";
 import { healthKitService } from "@/services/healthKit";
 
 /**
- * Settings for both roles. The child sees Health and the step goal (both live on the child's
- * phone); the parent sees the account. Support and signing out are shared.
+ * Health permission stays on the phone; the step goal is shared through the child's profile.
  */
 export default function Settings() {
   const navigate = useNavigate();
   const { profile, signOut } = useAuth();
   const isChild = profile?.role === "child";
-  const { dailyStepGoal, updateGoal } = useActivityGoal();
+  const { dailyStepGoal, updateGoal, loading: goalLoading, error: goalError } = useActivityGoal();
   const [healthKitEnabled, setHealthKitEnabled] = useState(false);
   const [isHealthKitAvailable] = useState(healthKitService.isAvailable());
   const [goalModalOpen, setGoalModalOpen] = useState(false);
@@ -75,8 +74,8 @@ export default function Settings() {
           <Row
             icon={<Target className="h-5 w-5" />}
             title="Dagligt stegmål"
-            description={`${dailyStepGoal.toLocaleString("sv-SE")} steg`}
-            onClick={() => setGoalModalOpen(true)}
+            description={goalLoading ? "Laddar…" : goalError ? "Kunde inte hämta stegmålet" : `${dailyStepGoal.toLocaleString("sv-SE")} steg`}
+            {...(!goalLoading && !goalError ? { onClick: () => setGoalModalOpen(true) } : {})}
           />
           <Row icon={<Clock className="h-5 w-5" />} title="Skärmtid från steg" description="200 steg = 1 minut" />
         </Group>
