@@ -57,6 +57,10 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-ring-offset-background: var(--background);
+  --color-reward: var(--reward);
+  --color-reward-foreground: var(--reward-foreground);
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -94,6 +98,13 @@
   --border: hsl(220 15% 18%);
   --input: hsl(220 15% 18%);
   --ring: hsl(200 100% 50%);
+  /* Earning colour: everything you earn (passes, tasks, +minutes) is green; your balance is blue. */
+  --reward: hsl(152 76% 48%);
+  --reward-foreground: hsl(220 20% 2%);
+  /* Filled red buttons. --destructive stays the (lighter) red for text on the dark background;
+     white on --destructive only reached ~3.8:1, white on --danger passes 4.5:1. */
+  --danger: hsl(0 64% 50%);
+  --danger-foreground: hsl(0 0% 100%);
   --radius: 1rem;
   --gradient-activity: linear-gradient(135deg, hsl(200 100% 50%) 0%, hsl(210 100% 60%) 100%);
   --gradient-reward: linear-gradient(135deg, hsl(200 100% 50%) 0%, hsl(190 100% 45%) 100%);
@@ -193,4 +204,31 @@
 @utility neon-border {
     border: 1px solid hsl(200 100% 50% / 0.3);
     box-shadow: inset 0 0 20px hsl(200 100% 50% / 0.05), 0 0 20px hsl(200 100% 50% / 0.1);
+}
+
+/*
+ * iPhone safe areas. Capacitor runs with contentInset "never", so the web view
+ * extends under the status bar / Dynamic Island and the home indicator.
+ * env() is 0 in a normal browser, so these are harmless on the web.
+ */
+@utility safe-top {
+    padding-top: env(safe-area-inset-top);
+}
+
+@utility header-safe {
+    padding-top: calc(env(safe-area-inset-top) + 1rem);
+}
+
+@utility safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Room for the fixed bottom navigation plus the home indicator. */
+@utility nav-safe-pb {
+    padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+}
+
+/* Bottom action area on screens without navigation (active pass, pass result). */
+@utility bottom-bar-safe {
+    padding-bottom: calc(env(safe-area-inset-bottom) + 1.5rem);
 }

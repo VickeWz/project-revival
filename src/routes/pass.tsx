@@ -7,10 +7,10 @@ export const Route = createFileRoute("/pass")({
     meta: [
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { title: "Aktivitetspass — GameRun" },
-      { name: "description", content: "Aktivitetspass i GameRun. Följ verklig aktivitet och skärmtid från steg." },
-      { property: "og:title", content: "Aktivitetspass — GameRun" },
-      { property: "og:description", content: "Aktivitetspass i GameRun. Följ verklig aktivitet och skärmtid från steg." },
+      { title: "Tjäna tid — GameRun" },
+      { name: "description", content: "Tjäna skärmtid i GameRun genom rörelse eller uppgifter." },
+      { property: "og:title", content: "Tjäna tid — GameRun" },
+      { property: "og:description", content: "Tjäna skärmtid i GameRun genom rörelse eller uppgifter." },
     ],
   }),
   component: () => (
