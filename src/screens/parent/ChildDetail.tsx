@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AppScreen } from "@/components/layout/AppScreen";
 import { Initial } from "@/components/Initial";
+import { UnlockStatus } from "@/components/parent/UnlockStatus";
 import { formatPassDistance } from "@/lib/pass-metrics";
 import { cn } from "@/lib/utils";
 import { localDay, useChildWeek, type LinkedChild } from "@/hooks/useParentOverview";
@@ -67,6 +68,7 @@ export function ChildDetail({ child, refreshKey, onBack, onGive, onRemove }: Chi
             <span className="ml-2 text-xl font-semibold text-muted-foreground">min</span>
           </p>
         </div>
+        <UnlockStatus expiresAt={child.unlockExpiresAt} />
         <Button className="h-12 w-full text-base" onClick={onGive}>
           <CirclePlus className="h-5 w-5" aria-hidden="true" />
           Ge extra tid

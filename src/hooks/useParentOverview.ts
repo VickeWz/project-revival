@@ -10,6 +10,7 @@ export interface LinkedChild {
   /** Steps saved from today's passes. Parents cannot read a child's full HealthKit day. */
   stepsToday: number;
   earnedToday: number;
+  unlockExpiresAt: string | null;
 }
 
 export interface TimeRequest {
@@ -50,7 +51,7 @@ export function useParentOverview() {
         setChildren([]);
         return;
       }
-      const [{ data: profiles, error: profilesError }, { data: balances }, { data: today }] = await Promise.all([
+      const [{ data: profiles, error: profilesError }, { data: balances }, { data: today }, { data: unlocks, error: unlockError }] = await Promise.all([
         supabase.from("profiles").select("id, display_name").in("id", childIds),
         supabase.from("screen_time_balance").select("user_id, minutes_remaining").in("user_id", childIds),
         supabase
@@ -58,8 +59,14 @@ export function useParentOverview() {
           .select("user_id, steps, screen_time_earned")
           .in("user_id", childIds)
           .eq("logged_at", localDay(new Date())),
+        supabase.from("screen_time_sessions")
+          .select("profile_id, expires_at")
+          .in("profile_id", childIds)
+          .gt("expires_at", new Date().toISOString())
+          .order("expires_at", { ascending: false }),
       ]);
       if (profilesError) throw profilesError;
+      if (unlockError) console.error("Kunde inte läsa aktiva upplåsningar:", unlockError);
       setChildren(
         (profiles ?? [])
           .map((child) => {
@@ -70,6 +77,7 @@ export function useParentOverview() {
               balance: balances?.find((row) => row.user_id === child.id)?.minutes_remaining ?? 0,
               stepsToday: log?.steps ?? 0,
               earnedToday: log?.screen_time_earned ?? 0,
+              unlockExpiresAt: unlocks?.find((session) => session.profile_id === child.id)?.expires_at ?? null,
             };
           })
           .sort((a, b) => a.name.localeCompare(b.name, "sv")),

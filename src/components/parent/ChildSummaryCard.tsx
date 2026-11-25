@@ -1,6 +1,7 @@
 import { ChevronRight, CirclePlus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Initial } from "@/components/Initial";
+import { UnlockStatus } from "@/components/parent/UnlockStatus";
 import { cn } from "@/lib/utils";
 import type { LinkedChild } from "@/hooks/useParentOverview";
 
@@ -14,6 +15,7 @@ export function ChildSummaryCard({ child, onOpen, onGive }: { child: LinkedChild
           <span className="min-w-0 flex-1 truncate font-display text-lg font-bold">{child.name}</span>
           <ChevronRight className="h-5 w-5 text-muted-foreground" aria-hidden="true" />
         </span>
+        <UnlockStatus expiresAt={child.unlockExpiresAt} />
         <span className="grid w-full grid-cols-3 gap-2">
           <Stat label="Saldo" value={`${child.balance} min`} tone="primary" />
           <Stat label="Intjänat idag" value={`+${child.earnedToday} min`} tone="reward" />

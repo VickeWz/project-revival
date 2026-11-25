@@ -1,0 +1,1 @@
+CREATE POLICY "Parents read linked children active unlocks" ON public.screen_time_sessions FOR SELECT TO authenticated USING (public.is_parent_of_profile(profile_id) AND expires_at > now());
