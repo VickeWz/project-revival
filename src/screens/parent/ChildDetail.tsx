@@ -81,6 +81,9 @@ export function ChildDetail({ child, refreshKey, onBack, onGive, onRemove }: Chi
 
       <section aria-labelledby="child-today" className="space-y-3">
         <h2 id="child-today" className="font-display text-lg font-semibold">Idag</h2>
+        <p className="font-display text-2xl font-bold tabular-nums">
+          {child.dailySteps === null ? "Dagens steg har inte delats ännu" : `${child.dailySteps.toLocaleString("sv-SE")} steg totalt idag`}
+        </p>
         <div className="rounded-3xl border border-border bg-card p-4">
           <p className="font-display text-2xl font-bold tabular-nums text-reward">+{child.earnedToday} min intjänat</p>
           <p className="text-sm text-muted-foreground">

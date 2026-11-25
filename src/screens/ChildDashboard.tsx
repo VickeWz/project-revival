@@ -10,6 +10,8 @@ import { useAuth } from "@/hooks/useAuth";
 import { useActivityGoal } from "@/hooks/useActivityGoal";
 import { healthKitService, type HealthData } from "@/services/healthKit";
 import { STEPS_PER_MINUTE, formatPassDistance } from "@/lib/pass-metrics";
+import { createDailyStepSync } from "@/lib/daily-steps";
+import { format } from "date-fns";
 
 /**
  * Hem, top to bottom: today's steps, "how much time do I have?" (balance card, unlock,
@@ -26,19 +28,31 @@ export default function ChildDashboard() {
     if (!healthKitService.isAvailable()) return;
     let cancelled = false;
     let stop = () => {};
+    const sync = profile?.role === "child" ? createDailyStepSync(profile.id) : null;
+    let readingDay = format(new Date(), "yyyy-MM-dd");
     setStatus("Hämtar från Hälsa…");
     void healthKitService.requestAuthorization().then((granted) => {
       if (cancelled) return;
       if (!granted) { setStatus("Tillåt åtkomst till Hälsa i iPhones inställningar."); return; }
       stop = healthKitService.watchData(
-        () => healthKitService.getTodayData(),
-        (data) => { setHealthData(data); setStatus("Synkat med Hälsa"); },
+        () => {
+          readingDay = format(new Date(), "yyyy-MM-dd");
+          return healthKitService.getTodayData();
+        },
+        (data) => {
+          if (cancelled) return;
+          setHealthData(data);
+          setStatus("Synkat med Hälsa");
+          if (sync) void sync(data.steps, readingDay).catch(() => {
+            if (!cancelled) setStatus("Stegen visas här, men kunde inte delas. Försöker igen…");
+          });
+        },
         () => setStatus("Kunde inte synka med Hälsa. Försöker igen…"),
         1000,
       );
     }).catch(() => { if (!cancelled) setStatus("Kunde inte hämta från Hälsa."); });
     return () => { cancelled = true; stop(); };
-  }, [retry]);
+  }, [retry, profile?.id, profile?.role]);
 
   const progress = healthData ? Math.min(100, healthData.steps / dailyStepGoal * 100) : 0;
 

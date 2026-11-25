@@ -19,8 +19,9 @@ export function ChildSummaryCard({ child, onOpen, onGive }: { child: LinkedChild
         <span className="grid w-full grid-cols-3 gap-2">
           <Stat label="Saldo" value={`${child.balance} min`} tone="primary" />
           <Stat label="Intjänat idag" value={`+${child.earnedToday} min`} tone="reward" />
-          <Stat label="Steg i pass idag" value={child.stepsToday.toLocaleString("sv-SE")} />
+          <Stat label="Dagens steg" value={child.dailySteps?.toLocaleString("sv-SE") ?? "—"} />
         </span>
+        {child.dailySteps === null && <span className="text-xs text-muted-foreground">Dagens steg har inte delats ännu.</span>}
       </button>
       <div className="border-t border-border px-2 py-1">
         <Button variant="ghost" className="h-12 w-full text-primary hover:bg-primary/10 hover:text-primary" onClick={onGive}>

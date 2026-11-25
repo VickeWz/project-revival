@@ -71,6 +71,13 @@
       "when": 1795634536945,
       "tag": "0009_consume_pairing_code_with_account_lockout",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795634942557,
+      "tag": "0010_share_current_daily_steps",
+      "breakpoints": true
     }
   ]
 }

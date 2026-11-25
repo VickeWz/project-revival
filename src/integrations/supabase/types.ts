@@ -215,6 +215,32 @@ export type Database = {
           },
         ]
       }
+      current_daily_steps: {
+        Row: {
+          child_id: string
+          day: string
+          steps: number
+        }
+        Insert: {
+          child_id: string
+          day: string
+          steps: number
+        }
+        Update: {
+          child_id?: string
+          day?: string
+          steps?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "current_daily_steps_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       downtime_schedules: {
         Row: {
           child_id: string
