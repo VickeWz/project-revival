@@ -26,13 +26,13 @@ export const LEVELS: Record<Level, { title: string; grades: string }> = {
 };
 
 export const int = (rng: Rng, min: number, max: number) => min + Math.floor(rng() * (max - min + 1));
-export const pick = <T>(rng: Rng, items: readonly T[]): T => items[Math.floor(rng() * items.length)];
+export const pick = <T>(rng: Rng, items: readonly T[]): T => items[Math.floor(rng() * items.length)] as T;
 
 export function shuffle<T>(rng: Rng, items: readonly T[]): T[] {
   const copy = [...items];
   for (let i = copy.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
-    [copy[i], copy[j]] = [copy[j], copy[i]];
+    [copy[i], copy[j]] = [copy[j] as T, copy[i] as T];
   }
   return copy;
 }
@@ -46,7 +46,7 @@ export function sample<T>(rng: Rng, items: readonly T[], count: number, exclude:
 export function choice(rng: Rng, prompt: string, correct: string, wrong: readonly string[], explanation?: string): TaskQuestion {
   const distractors = wrong.filter((option, index) => option !== correct && wrong.indexOf(option) === index).slice(0, 3);
   const options = shuffle(rng, [correct, ...distractors]);
-  return { prompt, options, answer: options.indexOf(correct), explanation };
+  return { prompt, options, answer: options.indexOf(correct), ...(explanation === undefined ? {} : { explanation }) };
 }
 
 /** Numbers as Swedish children read them: "1 998", "−5". */

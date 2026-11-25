@@ -73,13 +73,13 @@ const SAME_START = [
 ];
 const firstInAlphabet = (words: (rng: Rng) => string[]): Generator => (rng) => {
   const options = words(rng);
-  const answer = [...options].sort((a, b) => a.localeCompare(b, "sv"))[0];
+  const answer = [...options].sort((a, b) => a.localeCompare(b, "sv"))[0]!;
   return choice(rng, "Vilket ord kommer först i alfabetet?", answer, options.filter((word) => word !== answer),
     "I svenska alfabetet kommer å, ä och ö sist, efter z.");
 };
 const alphabetEasy = firstInAlphabet((rng) => {
   const byLetter = new Map<string, string>();
-  for (const word of sample(rng, ALPHABET_WORDS, ALPHABET_WORDS.length)) if (!byLetter.has(word[0])) byLetter.set(word[0], word);
+  for (const word of sample(rng, ALPHABET_WORDS, ALPHABET_WORDS.length)) if (!byLetter.has(word[0]!)) byLetter.set(word[0]!, word);
   return [...byLetter.values()].slice(0, 4);
 });
 const alphabetSameStart = firstInAlphabet((rng) => sample(rng, pick(rng, SAME_START), 4));
@@ -101,7 +101,7 @@ const SPELLING_HARD: ReadonlyArray<readonly string[]> = [
 ];
 const spelling = (words: ReadonlyArray<readonly string[]>): Generator => (rng) => {
   const [answer, ...wrong] = pick(rng, words);
-  return choice(rng, "Vilket ord är rätt stavat?", answer, wrong);
+  return choice(rng, "Vilket ord är rätt stavat?", answer!, wrong);
 };
 
 // Sentences with ___ and the right word; "de" is the subject form, "dem" the object form.

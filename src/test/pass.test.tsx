@@ -77,7 +77,7 @@ it('starts a round of five questions from a subject and saves it once at the end
   fireEvent.click(screen.getByRole('button', { name: /Matte/ }));
   for (let question = 1; question <= 5; question++) {
     expect(screen.getByText(`Fråga ${question} av 5`)).toBeInTheDocument();
-    fireEvent.click(screen.getAllByRole('button', { pressed: false })[0]);
+    fireEvent.click(screen.getAllByRole('button', { pressed: false })[0]!);
     fireEvent.click(screen.getByRole('button', { name: question === 5 ? 'Se resultat' : 'Nästa fråga' }));
   }
   await screen.findByText('12 min');

@@ -45,7 +45,7 @@ export function TaskSession({ subject, level, onExit, onSaved, onHome }: {
   const [confirmExit, setConfirmExit] = useState(false);
 
   const total = round.questions.length;
-  const question = round.questions[index];
+  const question = round.questions[index]!;
   const answered = selected !== null;
   const isLast = index === total - 1;
 

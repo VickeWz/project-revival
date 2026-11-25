@@ -19,7 +19,7 @@ describe("task rounds", () => {
           expect(question.options.length).toBeGreaterThanOrEqual(2);
           expect(new Set(question.options).size).toBe(question.options.length);
           expect(question.options[question.answer]).toBeTruthy();
-          if (subject === "matte") expect(question.explanation?.endsWith(question.options[question.answer])).toBe(true);
+          if (subject === "matte") expect(question.explanation?.endsWith(question.options[question.answer]!)).toBe(true);
         }
       }
     },
