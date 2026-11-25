@@ -1,4 +1,5 @@
-- [ ] Visa kopplade barns aktiva upplåsningstid på förälderns barnkort och barnsida med begränsad läsrätt.
+- [x] Lägg till begränsad föräldraläsrätt och etiketten för aktiva upplåsningsfönster på barnkort och barnsida; regeln finns i databasen och 11 tester passerar.
+- [ ] Verifiera förälderns upplåsningsetikett i inloggad visning. Blockerat: testladdningen hänger i förhandsvisningen trots återställda sidfiler; verklig iPhone-upplåsning saknar fysisk testenhet.
 - [x] Läs in grenen ny-layout; 41 tester passerar och inloggad startsida, Tjäna-flikar samt profil kontrollerade på dator och mobil utan runtime-fel.
 - [x] Lägg till Apples appval, blockering, intjänat saldo och tidsbegränsad aktivering med iOS-återblockering samt iPhone-testguide. 22 tester passerar; inloggad mobilvisning och nekade ogiltiga saldomutationer verifierade. Swift och faktisk återblockering återstår att verifiera på iPhone.
 - [ ] Verifiera skärmtidsblockering på fysisk iPhone. Blockerat: saknar Xcode, signering och fysisk iPhone; Apples distributionstillstånd krävs för TestFlight.
