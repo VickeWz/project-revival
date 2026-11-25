@@ -1,12 +1,11 @@
 // @ts-nocheck -- imported code written for a looser TypeScript config
 import { linkChild } from "@/lib/link-child.functions";
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, UserPlus, Loader2, Mail, Lock, AlertCircle, CheckCircle } from "lucide-react";
+import { AppScreen } from "@/components/layout/AppScreen";
+import { UserPlus, Loader2, AlertCircle } from "lucide-react";
 import { useNavigate } from "@/lib/router-compat";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -67,139 +66,60 @@ export default function AddChild() {
     }
   };
 
+  // Linking still verifies the child's own login (link-child server function). A code shown in the
+  // child's app would avoid sharing the password, but needs a backend change first.
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 gradient-glass border-b border-border/50">
-        <div className="max-w-lg mx-auto px-6 py-4 flex items-center">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/parent")}>
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
-          <div className="flex-1 text-center font-display font-bold text-xl text-foreground">
-            Lägg till barn
-          </div>
-          <div className="w-10" />
+    <AppScreen nav={false} back={{ label: "Översikt", onClick: () => navigate("/parent") }} title="Lägg till barn">
+      <p className="-mt-4 text-muted-foreground">
+        Barnet behöver redan ha ett GameRun-konto. Skriv in barnets inloggning en gång för att koppla ihop kontona.
+      </p>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {error && (
+          <p role="alert" className="flex items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-foreground">
+            <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-destructive" aria-hidden="true" />
+            {error}
+          </p>
+        )}
+
+        <div className="space-y-2">
+          <Label htmlFor="email" className="font-semibold text-foreground">Barnets e-post</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="barn@epost.se"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="h-14 rounded-2xl border-border bg-card text-base"
+            disabled={loading}
+            autoComplete="off"
+          />
         </div>
-      </header>
 
-      <main className="max-w-lg mx-auto px-6 py-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <Card className="border-border/50 shadow-card">
-            <CardHeader className="text-center pb-2">
-              <motion.div
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{ delay: 0.1, type: "spring" }}
-                className="w-16 h-16 mx-auto mb-4 rounded-full gradient-hero flex items-center justify-center"
-              >
-                <UserPlus className="w-8 h-8 text-primary-foreground" />
-              </motion.div>
-              <CardTitle className="font-display text-2xl">Koppla barnets konto</CardTitle>
-              <CardDescription className="text-muted-foreground">
-                Ange barnets inloggningsuppgifter för att koppla kontot
-              </CardDescription>
-            </CardHeader>
+        <div className="space-y-2">
+          <Label htmlFor="password" className="font-semibold text-foreground">Barnets lösenord</Label>
+          <Input
+            id="password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="h-14 rounded-2xl border-border bg-card text-base"
+            disabled={loading}
+            autoComplete="off"
+          />
+        </div>
 
-            <CardContent className="pt-6">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Error Message */}
-                {error && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-start gap-3"
-                  >
-                    <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
-                    <p className="text-sm text-destructive">{error}</p>
-                  </motion.div>
-                )}
+        <Button type="submit" disabled={loading || !email || !password} className="h-14 w-full text-base">
+          {loading ? <Loader2 className="h-5 w-5 animate-spin" aria-hidden="true" /> : <UserPlus className="h-5 w-5" aria-hidden="true" />}
+          {loading ? "Kopplar…" : "Koppla konto"}
+        </Button>
+      </form>
 
-                {/* Email Field */}
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="text-foreground font-medium">
-                    Barnets e-post
-                  </Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="barn@epost.se"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 h-12 bg-muted/50 border-border/50"
-                      disabled={loading}
-                      autoComplete="email"
-                    />
-                  </div>
-                </div>
-
-                {/* Password Field */}
-                <div className="space-y-2">
-                  <Label htmlFor="password" className="text-foreground font-medium">
-                    Barnets lösenord
-                  </Label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input
-                      id="password"
-                      type="password"
-                      placeholder="Ange lösenord"
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 h-12 bg-muted/50 border-border/50"
-                      disabled={loading}
-                      autoComplete="current-password"
-                    />
-                  </div>
-                </div>
-
-                {/* Submit Button */}
-                <Button
-                  type="submit"
-                  disabled={loading || !email || !password}
-                  className="w-full h-14 text-lg font-display font-bold gradient-hero"
-                >
-                  {loading ? (
-                    <>
-                      <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                      Kopplar…
-                    </>
-                  ) : (
-                    <>
-                      <UserPlus className="w-5 h-5 mr-2" />
-                      Koppla barnets konto
-                    </>
-                  )}
-                </Button>
-              </form>
-
-              {/* Info Section */}
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="mt-8 p-4 bg-muted/30 rounded-xl border border-border/30"
-              >
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                  <div className="text-sm text-muted-foreground">
-                    <p className="font-medium text-foreground mb-1">Koppla konto</p>
-                    <ul className="space-y-1">
-                      <li>• Your child must have an existing account</li>
-                      <li>• Enter their login credentials to verify</li>
-                      <li>• Once linked, you can monitor their activity</li>
-                    </ul>
-                  </div>
-                </div>
-              </motion.div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </main>
-    </div>
+      <ul className="space-y-1.5 rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
+        <li>• Lösenordet används bara för att bekräfta kontot och sparas inte.</li>
+        <li>• När kontona är kopplade ser du saldo och sparad aktivitet och kan svara på förfrågningar om tid.</li>
+        <li>• Du kan koppla bort barnet när som helst.</li>
+      </ul>
+    </AppScreen>
   );
 }

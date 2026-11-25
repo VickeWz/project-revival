@@ -177,7 +177,7 @@ export default function AppLimits() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-50 gradient-glass border-b border-border/50">
+      <header className="sticky top-0 z-50 safe-top gradient-glass border-b border-border/50">
         <div className="max-w-lg mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>

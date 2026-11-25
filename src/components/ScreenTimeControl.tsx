@@ -1,24 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { AskParentTime } from '@/components/AskParentTime';
+import { MinutePicker } from '@/components/MinutePicker';
 import { LockKeyhole, ShieldCheck, Unlock, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { remainingSeconds } from '@/lib/screen-time';
 import { activateTime, currentSession, screenTimeAvailable, screenTimePlugin, type ScreenTimeStatus } from '@/services/screenTime';
 
+const MAX_ACTIVATION = 180;
+
+/**
+ * The balance card on Hem: how much time you have, unlocking it on iPhone,
+ * and asking a parent for more. Balance logic and native calls are unchanged.
+ */
 export function ScreenTimeControl() {
   const { profile } = useAuth();
   const [balance, setBalance] = useState<number | null>(null);
   const [status, setStatus] = useState<ScreenTimeStatus | null>(null);
-  const [minutes, setMinutes] = useState('5');
+  const [minutes, setMinutes] = useState(15);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [now, setNow] = useState(Date.now());
   const available = screenTimeAvailable();
   const pending = useRef<{ id: string; minutes: number } | null>(null);
   const active = status ? remainingSeconds(status.expiresAt, now) : 0;
+  const maxMinutes = Math.min(MAX_ACTIVATION, balance ?? 0);
+  const chosen = pending.current ? pending.current.minutes : Math.max(1, Math.min(minutes, maxMinutes));
 
   useEffect(() => {
     if (!profile) return;
@@ -38,8 +46,8 @@ export function ScreenTimeControl() {
           const session = await currentSession(profile.id);
           if (session && session.device_id === native.deviceId && session.id !== native.sessionId && !cancelled) {
             pending.current = { id: session.id, minutes: session.minutes };
-            setMinutes(String(session.minutes));
-            setError('Tiden är reserverad. Tryck på Försök igen för att slutföra aktiveringen.');
+            setMinutes(session.minutes);
+            setError('Tiden är reserverad. Tryck på Försök igen för att slutföra upplåsningen.');
           }
         }
       } catch (e) {
@@ -61,7 +69,7 @@ export function ScreenTimeControl() {
     finally { setBusy(false); }
   };
   const activate = () => perform(async () => {
-    const request = pending.current ?? { id: crypto.randomUUID(), minutes: Number(minutes) };
+    const request = pending.current ?? { id: crypto.randomUUID(), minutes: chosen };
     pending.current = request;
     const session = await activateTime(request.id, request.minutes);
     setBalance(session.balance_after);
@@ -69,22 +77,66 @@ export function ScreenTimeControl() {
     pending.current = null;
     setNow(Date.now());
   });
+  const canActivate = !!pending.current || (Number.isInteger(chosen) && chosen >= 1 && chosen <= maxMinutes);
+
   return (
-    <section className="space-y-4 border-t border-border pt-6" aria-labelledby="screen-time-heading">
-      <h2 id="screen-time-heading" className="font-display font-bold text-xl flex items-center gap-2"><LockKeyhole className="w-5 h-5 text-secondary" />Min skärmtid</h2>
-      <div className="flex items-baseline justify-between gap-3"><span className="text-muted-foreground">Tillgängligt saldo</span><strong className="text-xl tabular-nums text-primary">{balance === null ? '—' : `${balance} min`}</strong></div>
-      {!available ? <p className="text-sm text-muted-foreground">Appblockering är endast tillgänglig i iPhone-appen.</p> : <>
-        {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-        {!status?.authorized ? <Button variant="outline" className="w-full" disabled={busy} onClick={() => void perform(async () => setStatus(await screenTimePlugin.authorize()))}><ShieldCheck className="w-4 h-4 mr-2" />Godkänn med förälder</Button> : <>
-          {status.selectionCount === 0 ? <Button variant="outline" className="w-full" disabled={busy} onClick={() => void perform(async () => setStatus(await screenTimePlugin.selectApps()))}><LockKeyhole className="w-4 h-4 mr-2" />Välj appar med förälder</Button> : <p className="text-sm text-muted-foreground">{status.selectionCount} val omfattas av blockeringen.</p>}
-          {active > 0 ? <p role="status" className="font-semibold text-secondary tabular-nums">Tidsfönster kvar: {Math.floor(active / 60)}:{String(active % 60).padStart(2, '0')}</p> : <>
-            <Label htmlFor="activate-minutes">Minuter att aktivera</Label>
-            <Input id="activate-minutes" type="number" min={1} max={Math.min(180, balance ?? 0)} value={minutes} disabled={busy || !!pending.current} onChange={e => setMinutes(e.target.value)} />
-            <Button className="w-full" disabled={busy || status.selectionCount === 0 || (!pending.current && (!Number.isInteger(Number(minutes)) || Number(minutes) < 1 || Number(minutes) > Math.min(180, balance ?? 0)))} onClick={() => void activate()}>{busy ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Unlock className="w-4 h-4 mr-2" />}{pending.current ? 'Försök igen' : 'Aktivera tid'}</Button>
-          </>}
-        </>}
-      </>}
-      {!available && error && <p role="alert" className="text-sm text-destructive">Kunde inte läsa saldot.</p>}
+    <section aria-labelledby="balance-heading" className="space-y-5 rounded-3xl border border-primary/25 bg-card p-5">
+      <div>
+        <h2 id="balance-heading" className="text-sm font-semibold text-muted-foreground">Din skärmtid</h2>
+        <p className="mt-1 font-display text-5xl font-bold tabular-nums text-primary">
+          {balance === null ? '—' : balance}
+          <span className="ml-2 text-xl font-semibold text-muted-foreground">min</span>
+        </p>
+      </div>
+
+      {error && <p role="alert" className="text-sm text-destructive">{available ? error : 'Kunde inte läsa saldot.'}</p>}
+
+      {!available ? (
+        <p className="text-sm text-muted-foreground">Upplåsning av appar fungerar bara i iPhone-appen.</p>
+      ) : !status?.authorized ? (
+        <div className="space-y-2">
+          <Button variant="outline" className="h-12 w-full" disabled={busy} onClick={() => void perform(async () => setStatus(await screenTimePlugin.authorize()))}>
+            <ShieldCheck className="h-4 w-4" />Godkänn med förälder
+          </Button>
+          <p className="text-xs text-muted-foreground">Första gången behöver en förälder godkänna Skärmtid på den här telefonen.</p>
+        </div>
+      ) : status.selectionCount === 0 ? (
+        <Button variant="outline" className="h-12 w-full" disabled={busy} onClick={() => void perform(async () => setStatus(await screenTimePlugin.selectApps()))}>
+          <LockKeyhole className="h-4 w-4" />Välj appar med förälder
+        </Button>
+      ) : active > 0 ? (
+        <div role="status" className="rounded-2xl bg-primary/10 p-4 text-center">
+          <p className="text-sm text-muted-foreground">Apparna är upplåsta</p>
+          <p className="font-display text-4xl font-bold tabular-nums text-foreground">
+            {Math.floor(active / 60)}:{String(active % 60).padStart(2, '0')}
+          </p>
+          <p className="text-xs text-muted-foreground">kvar</p>
+        </div>
+      ) : maxMinutes < 1 && !pending.current ? (
+        <p className="rounded-2xl bg-muted/60 p-4 text-sm text-muted-foreground">
+          Du har ingen tid att låsa upp just nu. Starta ett pass för att tjäna mer.
+        </p>
+      ) : (
+        <div className="space-y-4">
+          <MinutePicker
+            label="Minuter att låsa upp"
+            value={chosen}
+            onChange={setMinutes}
+            min={1}
+            max={Math.max(1, maxMinutes)}
+            disabled={busy || !!pending.current}
+          />
+          <Button className="h-14 w-full text-base" disabled={busy || !canActivate} onClick={() => void activate()}>
+            {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unlock className="h-4 w-4" />}
+            {pending.current ? 'Försök igen' : `Lås upp ${chosen} min`}
+          </Button>
+          <p className="text-center text-xs text-muted-foreground">{status.selectionCount} valda appar och kategorier är spärrade utanför tiden.</p>
+        </div>
+      )}
+
+      <div className="border-t border-border pt-3">
+        <AskParentTime />
+      </div>
     </section>
   );
 }

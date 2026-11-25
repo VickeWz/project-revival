@@ -1,23 +1,22 @@
 // @ts-nocheck -- imported code written for a looser TypeScript config
 import { useState, useEffect, useCallback, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { formatPassDistance, stepsToNextMinute } from "@/lib/pass-metrics";
-import { ArrowLeft, Play, Square, Footprints, Ruler, Clock, Tv, AlertTriangle, Timer, ChevronRight, History, Settings, Info } from "lucide-react";
-import { useNavigate, Link } from "@/lib/router-compat";
+import { STEPS_PER_MINUTE, formatPassDistance, stepsToNextMinute } from "@/lib/pass-metrics";
+import { AlertTriangle, Brain, Footprints, PartyPopper, Play, Square } from "lucide-react";
+import { useNavigate, useSearchParams } from "@/lib/router-compat";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { healthKitService } from "@/services/healthKit";
 import { watchPassData } from "@/services/passTracking";
 import { supabase } from "@/integrations/supabase/client";
-import { BottomNav } from "@/components/BottomNav";
-import { ScreenTimeControl } from "@/components/ScreenTimeControl";
+import { AppScreen } from "@/components/layout/AppScreen";
+import { ActivitySummary } from "@/components/home/ActivitySummary";
 import { format } from "date-fns";
-import logo from "@/assets/logo.png";
+
+/** The two ways to earn screen time. Hem links straight to either with ?del=. */
+type EarnPart = "rorelse" | "uppgifter";
 
 interface PassSession {
   id: string;
@@ -27,13 +26,40 @@ interface PassSession {
 interface ActivityLog {
   id: string;
   logged_at: string;
+  steps: number;
   distance_meters: number;
   screen_time_earned: number;
   active_minutes: number;
 }
 
+interface PassResult {
+  minutes: number;
+  balance: number;
+  steps: number;
+  distance: number;
+  seconds: number;
+}
+
+const formatTime = (seconds: number) => {
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  const mmss = `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  return h > 0 ? `${h}:${mmss}` : mmss;
+};
+
+// Local calendar day, matching p_day when the pass is saved (not the UTC day).
+const localDay = (date: Date) => format(date, "yyyy-MM-dd");
+
+const formatLogDay = (day: string, today: string) => {
+  if (day === today) return "Idag";
+  return new Date(`${day}T12:00:00`).toLocaleDateString("sv-SE", { day: "numeric", month: "short" });
+};
+
 export default function Pass() {
-  const [view, setView] = useState<"home" | "active" | "screentime">("home");
+  const [searchParams] = useSearchParams();
+  const [part, setPart] = useState<EarnPart>(searchParams.get("del") === "uppgifter" ? "uppgifter" : "rorelse");
+  const [view, setView] = useState<"home" | "active" | "done">("home");
   const [isActive, setIsActive] = useState(false);
   const [session, setSession] = useState<PassSession | null>(null);
   const [passData, setPassData] = useState({ steps: 0, distance: 0, activeMinutes: 0 });
@@ -42,56 +68,41 @@ export default function Pass() {
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [saving, setSaving] = useState(false);
-  const [screenTimeBalance, setScreenTimeBalance] = useState(0);
   const [passHistory, setPassHistory] = useState<ActivityLog[]>([]);
-  const [customScreenTime, setCustomScreenTime] = useState("");
+  const [result, setResult] = useState<PassResult | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const endingRef = useRef(false);
   const endTimeRef = useRef<Date | null>(null);
-  
+
   const { profile } = useAuth();
   const navigate = useNavigate();
 
   const earnedMinutes = healthKitService.calculateScreenTimeEarned(passData);
 
-  // Fetch screen time balance and history
-  useEffect(() => {
-    const fetchData = async () => {
-      if (!profile) return;
-      
-      // Fetch balance
-      const { data: balanceData } = await supabase
-        .from("screen_time_balance")
-        .select("minutes_remaining")
-        .eq("user_id", profile.id)
-        .maybeSingle();
-      
-      if (balanceData) {
-        setScreenTimeBalance(balanceData.minutes_remaining);
-      }
-
-      // Fetch history
-      const { data: historyData } = await supabase
-        .from("activity_logs")
-        .select("*")
-        .eq("user_id", profile.id)
-        .order("created_at", { ascending: false })
-        .limit(10);
-      
-      if (historyData) {
-        setPassHistory(historyData);
-      }
-    };
-    fetchData();
+  const loadHistory = useCallback(async () => {
+    if (!profile) return;
+    const { data } = await supabase
+      .from("activity_logs")
+      .select("*")
+      .eq("user_id", profile.id)
+      .order("created_at", { ascending: false })
+      .limit(10);
+    if (data) setPassHistory(data);
   }, [profile]);
 
-  // Request HealthKit permission on mount
   useEffect(() => {
-    const requestPermission = async () => {
-      const granted = await healthKitService.requestAuthorization();
-      setHasPermission(granted);
+    void loadHistory();
+  }, [loadHistory]);
+
+  // Ask for HealthKit access up front so the start button can explain a missing permission.
+  useEffect(() => {
+    let cancelled = false;
+    void healthKitService.requestAuthorization()
+      .then((granted) => { if (!cancelled) setHasPermission(granted); })
+      .catch(() => { if (!cancelled) setHasPermission(false); });
+    return () => {
+      cancelled = true;
     };
-    requestPermission();
   }, []);
 
   // Timer for elapsed time
@@ -116,33 +127,30 @@ export default function Pass() {
     );
   }, [isActive, session, saving]);
 
-  const handleGoToActive = () => {
-    setView("active");
-  };
-
+  // One tap starts the pass: no separate "ready" screen.
   const handleStart = useCallback(async () => {
     if (starting || session) return;
     setStarting(true);
     try {
-    if (!hasPermission) {
-      const granted = await healthKitService.requestAuthorization();
-      setHasPermission(granted);
-      if (!granted) {
-        toast.error("Tillåt åtkomst till Hälsa för att starta.");
-        return;
+      if (!hasPermission) {
+        const granted = await healthKitService.requestAuthorization();
+        setHasPermission(granted);
+        if (!granted) {
+          toast.error("Tillåt åtkomst till Hälsa för att starta.");
+          return;
+        }
       }
-    }
 
-    setSession({
-      id: crypto.randomUUID(),
-      startTime: new Date(),
-    });
-    endTimeRef.current = null;
-    setPassData({ steps: 0, distance: 0, activeMinutes: 0 });
-    setSyncError(false);
-    setElapsedSeconds(0);
-    setIsActive(true);
-    toast.success("Passet har startat!");
+      setSession({
+        id: crypto.randomUUID(),
+        startTime: new Date(),
+      });
+      endTimeRef.current = null;
+      setPassData({ steps: 0, distance: 0, activeMinutes: 0 });
+      setSyncError(false);
+      setElapsedSeconds(0);
+      setIsActive(true);
+      setView("active");
     } catch {
       toast.error("Kunde inte starta passet. Försök igen.");
     } finally {
@@ -160,380 +168,241 @@ export default function Pass() {
       // Read once more at the fixed end time so the last received steps are included.
       const finalData = await healthKitService.getPassData(session.startTime, endTimeRef.current);
       setPassData(finalData);
-      const finalDistance = finalData.distance;
-      const finalEarnedMinutes = healthKitService.calculateScreenTimeEarned(finalData);
-      const today = format(session.startTime, "yyyy-MM-dd");
-      const { data: result, error: saveError } = await supabase.rpc("complete_step_pass", {
+      const { data: saved, error: saveError } = await supabase.rpc("complete_step_pass", {
         p_id: session.id,
         p_started_at: session.startTime.toISOString(),
         p_ended_at: endTimeRef.current.toISOString(),
-        p_day: today,
+        p_day: localDay(session.startTime),
         p_steps: finalData.steps,
-        p_distance: finalDistance,
+        p_distance: finalData.distance,
         p_active_minutes: finalData.activeMinutes,
       });
       if (saveError) throw saveError;
-      const newBalance = result.balance;
 
-      setScreenTimeBalance(newBalance);
-      toast.success(`Passet är klart! Du tjänade ${finalEarnedMinutes} minuter`, {
-        description: "Se ditt uppdaterade saldo under Skärmtid",
+      setResult({
+        minutes: typeof saved.earned_minutes === "number" ? saved.earned_minutes : healthKitService.calculateScreenTimeEarned(finalData),
+        balance: saved.balance,
+        steps: finalData.steps,
+        distance: finalData.distance,
+        seconds: Math.floor((endTimeRef.current.getTime() - session.startTime.getTime()) / 1000),
       });
       setSession(null);
       setIsActive(false);
       setElapsedSeconds(0);
-      setView("screentime"); // Go to screentime to show updated balance
-      
-      // Refresh history
-      const { data: historyData } = await supabase
-        .from("activity_logs")
-        .select("*")
-        .eq("user_id", profile.id)
-        .order("created_at", { ascending: false })
-        .limit(10);
-      if (historyData) setPassHistory(historyData);
+      setView("done");
+      void loadHistory();
     } catch (error) {
       console.error("Error saving pass:", error);
-      toast.error("Kunde inte spara passet");
+      toast.error("Kunde inte spara passet. Försök igen.");
     } finally {
       endingRef.current = false;
       setSaving(false);
     }
-  }, [session, profile]);
+  }, [session, profile, loadHistory]);
 
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
-  };
-
-  const formatBalance = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
-  };
-
-  // Active Pass View
+  // Active pass: focus mode without navigation, one big number that matters (+minutes).
   if (view === "active") {
     return (
-      <div className="min-h-screen bg-background">
-        <header className="sticky top-0 z-50 gradient-glass border-b border-border/50">
-          <div className="max-w-lg mx-auto px-6 py-4 flex items-center">
-            <Button variant="ghost" size="icon" onClick={() => !isActive && setView("home")} disabled={isActive}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div className="flex-1 text-center font-display font-bold text-xl text-foreground">
-              Aktivitetspass
-            </div>
-            <div className="w-10" />
-          </div>
+      <div className="flex min-h-screen flex-col bg-background">
+        <header className="header-safe px-5">
+          <h1 className="mx-auto flex max-w-lg items-center justify-center gap-2 font-body text-sm font-semibold text-reward">
+            <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-reward opacity-60 motion-reduce:hidden" />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-reward" />
+            </span>
+            {saving ? "Sparar passet…" : "Pass pågår"}
+          </h1>
         </header>
 
-        <main className="max-w-lg mx-auto px-6 py-8">
-          {hasPermission === false && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-center gap-3"
+        <main className="mx-auto flex w-full max-w-lg flex-1 flex-col px-5 pt-6">
+          <p className="text-center font-display text-6xl font-bold tabular-nums text-foreground" aria-label="Tid">
+            {formatTime(elapsedSeconds)}
+          </p>
+
+          <section className="mt-8 rounded-3xl border border-reward/30 bg-reward/10 p-6 text-center">
+            <p className="text-sm font-semibold text-muted-foreground">Intjänat hittills</p>
+            <p className="mt-1 font-display text-6xl font-bold tabular-nums text-reward">
+              +<span aria-label="Intjänade minuter">{earnedMinutes}</span>
+              <span className="ml-2 text-2xl">min</span>
+            </p>
+            <div
+              className="mt-5 h-2.5 overflow-hidden rounded-full bg-muted"
+              role="progressbar"
+              aria-label="Mot nästa minut"
+              aria-valuemin={0}
+              aria-valuemax={STEPS_PER_MINUTE}
+              aria-valuenow={passData.steps % STEPS_PER_MINUTE}
             >
-              <AlertTriangle className="w-5 h-5 text-destructive" />
-              <p className="text-sm text-destructive">
-                Hälsa är endast tillgängligt på iPhone. Tillåt åtkomst till steg i Inställningar.
-              </p>
-            </motion.div>
+              <motion.div
+                className="h-full rounded-full bg-reward"
+                animate={{ width: `${((passData.steps % STEPS_PER_MINUTE) / STEPS_PER_MINUTE) * 100}%` }}
+              />
+            </div>
+            <p className="mt-2 text-sm text-muted-foreground">Nästa minut om {stepsToNextMinute(passData.steps)} steg</p>
+          </section>
+
+          <dl className="mt-4 grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-border bg-card p-4 text-center">
+              <dt className="text-xs font-semibold text-muted-foreground">Steg</dt>
+              <dd aria-label="Steg under passet" className="mt-1 font-display text-2xl font-bold tabular-nums">
+                {passData.steps.toLocaleString("sv-SE")}
+              </dd>
+            </div>
+            <div className="rounded-2xl border border-border bg-card p-4 text-center">
+              <dt className="text-xs font-semibold text-muted-foreground">Distans</dt>
+              <dd aria-label="Distans under passet" className="mt-1 font-display text-2xl font-bold tabular-nums">
+                {formatPassDistance(passData.distance)}
+              </dd>
+            </div>
+          </dl>
+
+          {syncError && <p role="status" className="mt-4 text-center text-sm text-destructive">Kunde inte synka med Hälsa. Försöker igen…</p>}
+
+          <div className="mt-auto pt-8 bottom-bar-safe">
+            <Button
+              onClick={handleEnd}
+              disabled={saving}
+              variant="destructive"
+              className="h-14 w-full font-display text-base font-bold"
+            >
+              <Square className="h-5 w-5" />
+              {saving ? "Sparar…" : "Avsluta pass"}
+            </Button>
+            <p className="mt-3 text-center text-xs text-muted-foreground">Steg från Hälsa kan komma med lite fördröjning.</p>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Pass result: the reward moment gets its own screen instead of a toast.
+  if (view === "done" && result) {
+    const earnedAny = result.minutes > 0;
+    return (
+      <div className="flex min-h-screen flex-col bg-background">
+        <main className="header-safe mx-auto flex w-full max-w-lg flex-1 flex-col items-center px-5 text-center">
+          <motion.div
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 260, damping: 18 }}
+            className="mt-14 flex h-24 w-24 items-center justify-center rounded-full bg-reward text-reward-foreground shadow-[0_0_60px_-10px_var(--reward)]"
+          >
+            <PartyPopper className="h-11 w-11" aria-hidden="true" />
+          </motion.div>
+          <h1 className="mt-6 font-display text-3xl font-bold">{earnedAny ? "Bra jobbat!" : "Passet är sparat"}</h1>
+          <p className="mt-2 font-display text-6xl font-bold tabular-nums text-reward">+{result.minutes} min</p>
+          <p className="mt-3 text-muted-foreground">
+            {result.steps.toLocaleString("sv-SE")} steg · {formatPassDistance(result.distance)} · {formatTime(result.seconds)}
+          </p>
+          {!earnedAny && <p className="mt-1 text-sm text-muted-foreground">Gå {STEPS_PER_MINUTE} steg för att tjäna en minut.</p>}
+
+          <div className="mt-8 w-full rounded-3xl border border-primary/25 bg-card p-5">
+            <p className="text-sm font-semibold text-muted-foreground">Din skärmtid</p>
+            <p className="font-display text-4xl font-bold tabular-nums text-primary">{result.balance} min</p>
+          </div>
+
+          <div className="mt-auto w-full space-y-2 pt-8 bottom-bar-safe">
+            <Button className="h-14 w-full text-base" onClick={() => navigate("/child")}>
+              Till min skärmtid
+            </Button>
+            <Button variant="ghost" className="h-12 w-full" onClick={() => { setResult(null); setView("home"); }}>
+              Klar
+            </Button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Tjäna: choose how to earn — Rörelse (physical) or Uppgifter (cognitive).
+  const today = localDay(new Date());
+  const earnedToday = passHistory
+    .filter((log) => log.logged_at === today)
+    .reduce((sum, log) => sum + log.screen_time_earned, 0);
+
+  return (
+    <AppScreen title="Tjäna tid">
+      <Tabs value={part} onValueChange={(value) => setPart(value as EarnPart)}>
+        <TabsList aria-label="Välj hur du vill tjäna tid" className="grid h-auto w-full grid-cols-2 rounded-2xl bg-muted p-1">
+          <TabsTrigger value="rorelse" className="h-11 gap-2 rounded-xl text-sm font-semibold data-[state=active]:bg-card">
+            <Footprints className="h-4 w-4" aria-hidden="true" />
+            Rörelse
+          </TabsTrigger>
+          <TabsTrigger value="uppgifter" className="h-11 gap-2 rounded-xl text-sm font-semibold data-[state=active]:bg-card">
+            <Brain className="h-4 w-4" aria-hidden="true" />
+            Uppgifter
+            <span className="rounded-full bg-background/70 px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">Snart</span>
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="rorelse" className="mt-6 space-y-7">
+          {hasPermission === false && (
+            <p role="status" className="flex items-start gap-3 rounded-2xl border border-destructive/30 bg-destructive/10 p-4 text-sm text-foreground">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" aria-hidden="true" />
+              Pass kräver iPhone-appen och att GameRun får läsa steg i Hälsa.
+            </p>
           )}
 
-          <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center mb-8">
-            <div className="font-display font-bold text-6xl text-foreground mb-2">
-              {formatTime(elapsedSeconds)}
+          <section className="rounded-3xl border border-reward/30 bg-reward/10 p-5">
+            <div className="flex items-center gap-3">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-reward text-reward-foreground">
+                <Footprints className="h-6 w-6" aria-hidden="true" />
+              </span>
+              <div>
+                <h2 className="font-display text-lg font-bold">Gå eller spring</h2>
+                <p className="text-sm text-muted-foreground">Varje {STEPS_PER_MINUTE} steg ger 1 minut skärmtid.</p>
+              </div>
             </div>
-            <p className="text-muted-foreground">{isActive ? "Passet är aktivt" : "Redo att starta"}</p>
-          </motion.div>
-
-          {syncError && <p role="status" className="text-sm text-destructive mb-4">Kunde inte synka med Hälsa. Försöker igen…</p>}
-          <Tabs defaultValue="steps" className="mb-8">
-            <TabsList className="grid grid-cols-2 w-full mb-4">
-              <TabsTrigger value="steps"><Footprints className="w-4 h-4 mr-2" />Steg</TabsTrigger>
-              <TabsTrigger value="distance"><Ruler className="w-4 h-4 mr-2" />Distans</TabsTrigger>
-            </TabsList>
-          <div className="grid grid-cols-2 gap-4">
-            <TabsContent value="steps" className="mt-0">
-            <Card className="border-border/50">
-              <CardContent className="p-4 text-center">
-                <Footprints className="w-6 h-6 mx-auto mb-2 text-primary" />
-                <p aria-label="Steg under passet" className="font-display font-bold text-2xl text-foreground tabular-nums">
-                  {passData.steps.toLocaleString("sv-SE")}
-                </p>
-                <p className="text-xs text-muted-foreground">Steg under passet</p>
-              </CardContent>
-            </Card>
-            </TabsContent>
-            <TabsContent value="distance" className="mt-0">
-              <Card className="border-border/50">
-                <CardContent className="p-4 text-center">
-                  <Ruler className="w-6 h-6 mx-auto mb-2 text-primary" />
-                  <p aria-label="Distans under passet" className="font-display font-bold text-2xl text-foreground tabular-nums">{formatPassDistance(passData.distance)}</p>
-                  <p className="text-xs text-muted-foreground">Distans under passet</p>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <Card className="border-border/50">
-              <CardContent className="p-4 text-center">
-                <Tv className="w-6 h-6 mx-auto mb-2 text-secondary" />
-                <p aria-label="Intjänade minuter" className="font-display font-bold text-2xl text-foreground tabular-nums">{earnedMinutes}</p>
-                <p className="text-xs text-muted-foreground">intjänade minuter</p>
-              </CardContent>
-            </Card>
-          </div>
-          </Tabs>
-
-          <Card className="mb-8 border-border/50">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-muted-foreground">Nästa minut om</span>
-                <span className="font-display font-bold text-foreground">
-                  {stepsToNextMinute(passData.steps)} steg
-                </span>
-              </div>
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <motion.div className="h-full bg-primary" animate={{ width: `${(passData.steps % 200) / 2}%` }} />
-              </div>
-            </CardContent>
-          </Card>
-
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            {!session ? (
-              <Button
-                onClick={handleStart}
-                disabled={hasPermission !== true || starting}
-                className="w-full h-16 text-lg font-display font-bold gradient-hero"
-              >
-                <Play className="w-6 h-6 mr-2" />
-                {starting ? "Startar…" : "Starta pass"}
-              </Button>
-            ) : (
-              <Button
-                onClick={handleEnd}
-                disabled={saving}
-                variant="destructive"
-                className="w-full h-16 text-lg font-display font-bold"
-              >
-                <Square className="w-6 h-6 mr-2" />
-                {saving ? "Sparar…" : "Avsluta pass"}
-              </Button>
-            )}
-          </motion.div>
-
-          <div className="mt-8 text-center text-sm text-muted-foreground">
-            <p className="mb-1">200 steg = 1 minut skärmtid</p>
-            <p>Nya steg från Hälsa kan visas med fördröjning.</p>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  // Screentime View
-  if (view === "screentime") {
-    return (
-      <div className="min-h-screen bg-background pb-24">
-        <header className="sticky top-0 z-50 gradient-glass border-b border-border/50">
-          <div className="max-w-lg mx-auto px-6 py-4 flex items-center">
-            <Button variant="ghost" size="icon" onClick={() => setView("home")}>
-              <ArrowLeft className="w-5 h-5" />
+            <Button variant="reward" onClick={handleStart} disabled={starting} className="mt-5 h-14 w-full font-display text-base font-bold">
+              <Play className="h-5 w-5" />
+              {starting ? "Startar…" : "Starta pass"}
             </Button>
-            <div className="flex-1 text-center font-display font-bold text-xl text-foreground">
-              Skärmtid
+          </section>
+
+          <section aria-labelledby="history-heading" className="space-y-3">
+            <div className="flex items-baseline justify-between gap-3">
+              <h2 id="history-heading" className="font-display text-lg font-semibold">Senaste dagarna</h2>
+              <p className="text-sm text-muted-foreground">
+                Idag <span className="font-semibold text-reward">+{earnedToday} min</span>
+              </p>
             </div>
-            <div className="w-10" />
-          </div>
-        </header>
-
-        <main className="max-w-lg mx-auto px-6 py-8">
-          {/* Balance Display */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-gradient-to-br from-card via-card to-card/80 rounded-3xl p-8 neon-border mb-6 text-center relative overflow-hidden"
-          >
-            <motion.div 
-              className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-primary/20 blur-3xl"
-              animate={{ opacity: [0.3, 0.5, 0.3] }}
-              transition={{ duration: 3, repeat: Infinity }}
-            />
-            <div className="relative">
-              <p className="text-muted-foreground text-sm mb-2">Tillgänglig skärmtid</p>
-              <motion.p 
-                className="font-display font-bold text-5xl text-primary"
-                style={{ textShadow: '0 0 30px hsl(200 100% 50% / 0.5)' }}
-              >
-                {formatBalance(screenTimeBalance)}
-              </motion.p>
-            </div>
-          </motion.div>
-
-          <ScreenTimeControl />
-        </main>
-
-        <BottomNav />
-      </div>
-    );
-  }
-
-  // Home View (default)
-  return (
-    <div className="min-h-screen bg-background pb-24">
-      <header className="relative px-6 pt-12 pb-4">
-        <div className="flex items-center justify-between mb-4">
-          <Link to="/child" className="hover:opacity-80 transition-opacity">
-            <motion.img
-              src={logo}
-              alt="GameRun"
-              className="w-10 h-10 drop-shadow-[0_0_10px_hsl(200,100%,50%)]"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
-            />
-          </Link>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => navigate("/settings")}
-            className="text-foreground hover:bg-primary/20"
-          >
-            <Settings className="w-5 h-5" />
-          </Button>
-        </div>
-      </header>
-
-      <main className="px-6">
-        {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
-          <motion.button
-            whileHover={{ scale: 1.03, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={handleGoToActive}
-            className="p-6 rounded-2xl bg-card neon-border text-left relative overflow-hidden group"
-          >
-            <motion.div 
-              className="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
-            />
-            <div className="relative">
-              <div className="w-10 h-10 rounded-xl gradient-activity flex items-center justify-center mb-3 shadow-glow-primary">
-                <Play className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <p className="font-display font-bold text-foreground">Starta pass</p>
-              <p className="text-xs text-muted-foreground mt-1">Följ aktivitet och tjäna tid</p>
-            </div>
-          </motion.button>
-
-          <motion.button
-            whileHover={{ scale: 1.03, y: -2 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => setView("screentime")}
-            className="p-6 rounded-2xl bg-card neon-border text-left relative overflow-hidden group"
-          >
-            <motion.div 
-              className="absolute inset-0 bg-gradient-to-br from-secondary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"
-            />
-            <div className="relative">
-              <div className="w-10 h-10 rounded-xl gradient-hero flex items-center justify-center mb-3 shadow-glow-secondary">
-                <Tv className="w-5 h-5 text-primary-foreground" />
-              </div>
-              <p className="font-display font-bold text-foreground">Skärmtid</p>
-              <p className="text-xs text-muted-foreground mt-1">Se ditt saldo</p>
-            </div>
-          </motion.button>
-        </div>
-
-        {/* How It Works Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
-        >
-          <Card className="neon-border bg-primary/5">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-3">
-                <Info className="w-4 h-4 text-primary" />
-                <h3 className="font-display font-semibold text-foreground">Steg och skärmtid</h3>
-              </div>
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <p>• <span className="text-foreground font-medium">200 steg = 1 minut</span> skärmtid</p>
-                <p>• Passet följer din aktivitet tills du avslutar det</p>
-                <p>• Gå eller spring för att tjäna mer tid</p>
-                <p>• Aktivera intjänade minuter under Skärmtid</p>
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Earning Summary */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6"
-        >
-          <h2 className="font-display font-semibold text-xl text-foreground mb-4">Intjänad skärmtid</h2>
-          <Card className="neon-border">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-muted-foreground">Idag</span>
-                <span className="font-display font-bold text-foreground flex items-center gap-1">
-                  <Timer className="w-4 h-4 text-primary" />
-                  {passHistory
-                    .filter((log) => log.logged_at === new Date().toISOString().split("T")[0])
-                    .reduce((sum, log) => sum + log.screen_time_earned, 0)}m
-                </span>
-              </div>
-              <Button 
-                variant="secondary" 
-                className="w-full"
-                onClick={() => navigate("/child")}
-              >
-                Se dagens aktivitet
-              </Button>
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Pass History */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <h2 className="font-display font-semibold text-xl text-foreground mb-4">Sparad aktivitet</h2>
-          <Card className="neon-border">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <span className="text-muted-foreground">Aktivitet</span>
-                <div className="flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-primary" />
-                </div>
-              </div>
-              
-              {passHistory.length === 0 ? (
-                <p className="text-center text-muted-foreground py-4">Ingen sparad aktivitet ännu</p>
-              ) : (
-                <div className="space-y-3">
-                  {passHistory.slice(0, 5).map((log) => (
-                    <div key={log.id} className="flex items-center justify-between py-2 border-b border-border/30 last:border-0">
-                      <div>
-                        <p className="text-sm text-muted-foreground">{new Date(log.logged_at).toLocaleDateString("sv-SE", { day: "numeric", month: "short" })}</p>
-                      </div>
-                      <p className="font-display font-bold text-foreground">
-                        +{log.screen_time_earned} min
+            {passHistory.length === 0 ? (
+              <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                Inga pass ännu. Starta ditt första!
+              </p>
+            ) : (
+              <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+                {passHistory.slice(0, 5).map((log) => (
+                  <li key={log.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                    <div>
+                      <p className="text-sm font-semibold">{formatLogDay(log.logged_at, today)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(log.steps ?? 0).toLocaleString("sv-SE")} steg · {formatPassDistance(log.distance_meters)}
                       </p>
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-      </main>
+                    <p className="font-display font-bold tabular-nums text-reward">+{log.screen_time_earned} min</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
 
-      <BottomNav />
-    </div>
+          <ActivitySummary onSync={() => {}} />
+        </TabsContent>
+
+        <TabsContent value="uppgifter" className="mt-6">
+          <section className="rounded-3xl border border-border bg-card p-6 text-center">
+            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-foreground">
+              <Brain className="h-7 w-7" aria-hidden="true" />
+            </span>
+            <h2 className="mt-4 font-display text-xl font-bold">Uppgifter kommer snart</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Här kommer du att kunna tjäna skärmtid genom att lösa uppgifter, till exempel i matte, svenska och engelska.
+              Din förälder väljer ämnen och nivå.
+            </p>
+          </section>
+        </TabsContent>
+      </Tabs>
+    </AppScreen>
   );
 }

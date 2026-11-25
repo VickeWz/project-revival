@@ -1,23 +1,25 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import { Button } from "@/components/ui/button";
 import { ActivityRing } from "@/components/ActivityRing";
-import { BottomNav } from "@/components/BottomNav";
-import { ActivitySummary } from "@/components/home/ActivitySummary";
+import { AppScreen } from "@/components/layout/AppScreen";
 import { ScreenTimeControl } from "@/components/ScreenTimeControl";
-import { Settings, Play, Target, RefreshCw } from "lucide-react";
-import { useNavigate } from "@/lib/router-compat";
+import { Brain, ChevronRight, Footprints, RefreshCw } from "lucide-react";
+import { Link } from "@/lib/router-compat";
+import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/useAuth";
 import { useActivityGoal } from "@/hooks/useActivityGoal";
 import { healthKitService, type HealthData } from "@/services/healthKit";
-import { earnedScreenMinutes, formatPassDistance } from "@/lib/pass-metrics";
-import logo from "@/assets/logo.png";
+import { STEPS_PER_MINUTE, formatPassDistance } from "@/lib/pass-metrics";
 
+/**
+ * Hem, top to bottom: today's steps, "how much time do I have?" (balance card, unlock,
+ * ask a parent) and "how do I get more?" (the two ways to earn).
+ */
 export default function ChildDashboard() {
   const { profile } = useAuth();
   const { dailyStepGoal } = useActivityGoal();
-  const navigate = useNavigate();
   const [healthData, setHealthData] = useState<HealthData | null>(null);
-  const [status, setStatus] = useState(healthKitService.isAvailable() ? "Hämtar från Hälsa…" : "Hälsa är endast tillgängligt på iPhone.");
+  const [status, setStatus] = useState(healthKitService.isAvailable() ? "Hämtar från Hälsa…" : "Steg visas i iPhone-appen.");
   const [retry, setRetry] = useState(0);
 
   useEffect(() => {
@@ -39,41 +41,75 @@ export default function ChildDashboard() {
   }, [retry]);
 
   const progress = healthData ? Math.min(100, healthData.steps / dailyStepGoal * 100) : 0;
+
   return (
-    <div className="min-h-screen bg-background pb-24">
-      <header className="px-6 pt-12 pb-6 flex items-center justify-between">
-        <img src={logo} alt="GameRun" className="w-10 h-10" />
-        <Button variant="ghost" size="icon" aria-label="Inställningar" onClick={() => navigate("/settings")}><Settings className="w-5 h-5" /></Button>
-      </header>
-      <main className="px-6 max-w-lg mx-auto space-y-6">
-        <h1 className="font-display font-bold text-2xl">Hej{profile?.display_name ? ` ${profile.display_name}` : ""}! 👋</h1>
-        <section className="space-y-5">
-          <div className="flex justify-between items-center gap-3">
-            <h2 className="font-display font-semibold flex items-center gap-2"><Target className="w-4 h-4 text-primary" />Dagens stegmål</h2>
-            <Button variant="ghost" size="sm" onClick={() => navigate("/settings")}>Ändra mål</Button>
+    <AppScreen title={`Hej${profile?.display_name ? ` ${profile.display_name}` : ""}! 👋`}>
+      <section aria-labelledby="today-heading" className="space-y-3">
+        <h2 id="today-heading" className="font-display text-lg font-semibold">Idag</h2>
+        <div className="flex items-center gap-4 rounded-3xl border border-border bg-card p-4">
+          <ActivityRing progress={progress} size={84} strokeWidth={9}>
+            <span className="text-sm font-bold tabular-nums">{Math.round(progress)}%</span>
+          </ActivityRing>
+          <div className="min-w-0 flex-1">
+            <p className="font-display text-2xl font-bold tabular-nums" aria-label="Dagens steg">
+              {healthData ? healthData.steps.toLocaleString("sv-SE") : "—"}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              av {dailyStepGoal.toLocaleString("sv-SE")} steg{healthData ? ` · ${formatPassDistance(healthData.distance)}` : ""}
+            </p>
+            <p role="status" className="mt-1 text-xs text-muted-foreground">{status}</p>
           </div>
-          <div className="flex justify-center">
-            <ActivityRing progress={progress} size={180} strokeWidth={14}>
-              <div className="text-center">
-                <p className="font-display font-bold text-3xl text-primary tabular-nums" aria-label="Dagens steg">{healthData ? healthData.steps.toLocaleString("sv-SE") : "—"}</p>
-                <p className="text-xs text-muted-foreground mt-1">av {dailyStepGoal.toLocaleString("sv-SE")} steg</p>
-              </div>
-            </ActivityRing>
-          </div>
-          <dl className="grid grid-cols-2 gap-4 text-center">
-            <div><dt className="text-sm text-muted-foreground">Dagens distans</dt><dd className="font-bold text-xl text-primary tabular-nums">{healthData ? formatPassDistance(healthData.distance) : "—"}</dd></div>
-            <div><dt className="text-sm text-muted-foreground">Stegens skärmtid</dt><dd className="font-bold text-xl text-primary tabular-nums">{healthData ? `${earnedScreenMinutes(healthData.steps)} min` : "—"}</dd></div>
-          </dl>
-          <div className="flex items-center justify-between gap-3">
-            <p role="status" className="text-sm text-muted-foreground">{status}</p>
-            {healthKitService.isAvailable() && <Button variant="ghost" size="icon" aria-label="Synka igen" onClick={() => setRetry(v => v + 1)}><RefreshCw className="w-4 h-4" /></Button>}
-          </div>
-        </section>
-        <Button className="w-full h-12" onClick={() => navigate("/pass")}><Play className="w-4 h-4 mr-2" />Starta ett pass</Button>
-        <ScreenTimeControl />
-        <ActivitySummary onSync={(data) => { setHealthData(data); setStatus("Synkat med Hälsa"); }} />
-      </main>
-      <BottomNav />
-    </div>
+          {healthKitService.isAvailable() && (
+            <Button variant="ghost" size="icon" className="h-11 w-11 shrink-0" aria-label="Synka igen" onClick={() => setRetry((v) => v + 1)}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
+      </section>
+
+      <ScreenTimeControl />
+
+      <section aria-labelledby="earn-heading" className="space-y-3">
+        <h2 id="earn-heading" className="font-display text-lg font-semibold">Tjäna mer tid</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <EarnTile to="/pass?del=rorelse" icon={Footprints} title="Rörelse" text={`${STEPS_PER_MINUTE} steg = 1 min`} />
+          <EarnTile to="/pass?del=uppgifter" icon={Brain} title="Uppgifter" text="Kommer snart" soon />
+        </div>
+      </section>
+    </AppScreen>
+  );
+}
+
+function EarnTile({ to, icon: Icon, title, text, soon = false }: {
+  to: string;
+  icon: ComponentType<{ className?: string }>;
+  title: string;
+  text: string;
+  soon?: boolean;
+}) {
+  return (
+    <Link
+      to={to}
+      className={cn(
+        "flex min-h-[132px] flex-col justify-between rounded-3xl border p-4 transition-colors active:scale-[0.98]",
+        soon ? "border-border bg-card" : "border-reward/30 bg-reward/10",
+      )}
+    >
+      <span
+        className={cn(
+          "flex h-11 w-11 items-center justify-center rounded-2xl",
+          soon ? "bg-muted text-foreground" : "bg-reward text-reward-foreground",
+        )}
+      >
+        <Icon className="h-5 w-5" />
+      </span>
+      <span>
+        <span className="flex items-center justify-between font-display text-lg font-bold text-foreground">
+          {title}
+          <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+        </span>
+        <span className="text-sm text-muted-foreground">{text}</span>
+      </span>
+    </Link>
   );
 }
