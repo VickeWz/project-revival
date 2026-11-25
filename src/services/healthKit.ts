@@ -140,6 +140,18 @@ class HealthKitService {
     };
   }
 
+  /** Total steps in a fixed window, e.g. all of yesterday. */
+  async getStepsBetween(startDate: Date, endDate: Date): Promise<number> {
+    if (!this.isNative) throw new Error('HealthKit requires an iOS device');
+    const { resultData } = await this.querySamples({
+      sampleName: 'stepCount',
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      limit: 0,
+    });
+    return Math.max(0, Math.round(this.sumQuantity(resultData)));
+  }
+
   // Foreground sync: HealthKit may publish new samples in batches, not on each footstep.
   watchData(
     read: () => Promise<HealthData>,

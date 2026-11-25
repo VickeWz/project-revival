@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { STEPS_PER_MINUTE, formatPassDistance, stepsToNextMinute } from "@/lib/pass-metrics";
-import { AlertTriangle, Brain, Footprints, PartyPopper, Play, Square } from "lucide-react";
+import { AlertTriangle, Brain, Footprints, Play, Square } from "lucide-react";
 import { useNavigate, useSearchParams } from "@/lib/router-compat";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
@@ -13,6 +13,11 @@ import { watchPassData } from "@/services/passTracking";
 import { supabase } from "@/integrations/supabase/client";
 import { AppScreen } from "@/components/layout/AppScreen";
 import { ActivitySummary } from "@/components/home/ActivitySummary";
+import { RewardScreen } from "@/components/RewardScreen";
+import { TaskPicker } from "@/components/tasks/TaskPicker";
+import { TaskSession } from "@/components/tasks/TaskSession";
+import { loadTaskMinutesToday } from "@/lib/tasks/rewards";
+import type { Level, Subject } from "@/lib/tasks/questions";
 import { format } from "date-fns";
 
 /** The two ways to earn screen time. Hem links straight to either with ?del=. */
@@ -51,6 +56,18 @@ const formatTime = (seconds: number) => {
 // Local calendar day, matching p_day when the pass is saved (not the UTC day).
 const localDay = (date: Date) => format(date, "yyyy-MM-dd");
 
+const TASK_LEVEL_KEY = "gamerun_task_level";
+
+// The chosen level is a per-phone convenience; storage may be unavailable.
+const readTaskLevel = (): Level => {
+  try {
+    const stored = Number(localStorage.getItem(TASK_LEVEL_KEY));
+    return stored === 2 || stored === 3 ? stored : 1;
+  } catch {
+    return 1;
+  }
+};
+
 const formatLogDay = (day: string, today: string) => {
   if (day === today) return "Idag";
   return new Date(`${day}T12:00:00`).toLocaleDateString("sv-SE", { day: "numeric", month: "short" });
@@ -70,6 +87,9 @@ export default function Pass() {
   const [saving, setSaving] = useState(false);
   const [passHistory, setPassHistory] = useState<ActivityLog[]>([]);
   const [result, setResult] = useState<PassResult | null>(null);
+  const [taskLevel, setTaskLevel] = useState<Level>(readTaskLevel);
+  const [taskSubject, setTaskSubject] = useState<Subject | null>(null);
+  const [taskMinutesToday, setTaskMinutesToday] = useState<number | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const endingRef = useRef(false);
   const endTimeRef = useRef<Date | null>(null);
@@ -93,6 +113,18 @@ export default function Pass() {
   useEffect(() => {
     void loadHistory();
   }, [loadHistory]);
+
+  useEffect(() => {
+    if (!profile?.id) return;
+    let cancelled = false;
+    void loadTaskMinutesToday(profile.id).then((minutes) => { if (!cancelled) setTaskMinutesToday(minutes); });
+    return () => { cancelled = true; };
+  }, [profile?.id]);
+
+  const changeTaskLevel = (level: Level) => {
+    setTaskLevel(level);
+    try { localStorage.setItem(TASK_LEVEL_KEY, String(level)); } catch { /* the level is only remembered when storage works */ }
+  };
 
   // Ask for HealthKit access up front so the start button can explain a missing permission.
   useEffect(() => {
@@ -200,6 +232,20 @@ export default function Pass() {
     }
   }, [session, profile, loadHistory]);
 
+  // A round of tasks: focus mode like an active pass.
+  if (taskSubject) {
+    return (
+      <TaskSession
+        key={`${taskSubject}-${taskLevel}`}
+        subject={taskSubject}
+        level={taskLevel}
+        onExit={() => setTaskSubject(null)}
+        onSaved={(saved) => setTaskMinutesToday(saved.todayMinutes)}
+        onHome={() => navigate("/child")}
+      />
+    );
+  }
+
   // Active pass: focus mode without navigation, one big number that matters (+minutes).
   if (view === "active") {
     return (
@@ -279,38 +325,15 @@ export default function Pass() {
   if (view === "done" && result) {
     const earnedAny = result.minutes > 0;
     return (
-      <div className="flex min-h-screen flex-col bg-background">
-        <main className="header-safe mx-auto flex w-full max-w-lg flex-1 flex-col items-center px-5 text-center">
-          <motion.div
-            initial={{ scale: 0.6, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 260, damping: 18 }}
-            className="mt-14 flex h-24 w-24 items-center justify-center rounded-full bg-reward text-reward-foreground shadow-[0_0_60px_-10px_var(--reward)]"
-          >
-            <PartyPopper className="h-11 w-11" aria-hidden="true" />
-          </motion.div>
-          <h1 className="mt-6 font-display text-3xl font-bold">{earnedAny ? "Bra jobbat!" : "Passet är sparat"}</h1>
-          <p className="mt-2 font-display text-6xl font-bold tabular-nums text-reward">+{result.minutes} min</p>
-          <p className="mt-3 text-muted-foreground">
-            {result.steps.toLocaleString("sv-SE")} steg · {formatPassDistance(result.distance)} · {formatTime(result.seconds)}
-          </p>
-          {!earnedAny && <p className="mt-1 text-sm text-muted-foreground">Gå {STEPS_PER_MINUTE} steg för att tjäna en minut.</p>}
-
-          <div className="mt-8 w-full rounded-3xl border border-primary/25 bg-card p-5">
-            <p className="text-sm font-semibold text-muted-foreground">Din skärmtid</p>
-            <p className="font-display text-4xl font-bold tabular-nums text-primary">{result.balance} min</p>
-          </div>
-
-          <div className="mt-auto w-full space-y-2 pt-8 bottom-bar-safe">
-            <Button className="h-14 w-full text-base" onClick={() => navigate("/child")}>
-              Till min skärmtid
-            </Button>
-            <Button variant="ghost" className="h-12 w-full" onClick={() => { setResult(null); setView("home"); }}>
-              Klar
-            </Button>
-          </div>
-        </main>
-      </div>
+      <RewardScreen
+        title={earnedAny ? "Bra jobbat!" : "Passet är sparat"}
+        minutes={result.minutes}
+        details={`${result.steps.toLocaleString("sv-SE")} steg · ${formatPassDistance(result.distance)} · ${formatTime(result.seconds)}`}
+        note={earnedAny ? undefined : `Gå ${STEPS_PER_MINUTE} steg för att tjäna en minut.`}
+        balance={result.balance}
+        primary={{ label: "Till min skärmtid", onClick: () => navigate("/child") }}
+        secondary={{ label: "Klar", onClick: () => { setResult(null); setView("home"); } }}
+      />
     );
   }
 
@@ -331,7 +354,6 @@ export default function Pass() {
           <TabsTrigger value="uppgifter" className="h-11 gap-2 rounded-xl text-sm font-semibold data-[state=active]:bg-card">
             <Brain className="h-4 w-4" aria-hidden="true" />
             Uppgifter
-            <span className="rounded-full bg-background/70 px-1.5 py-0.5 text-[11px] font-semibold text-muted-foreground">Snart</span>
           </TabsTrigger>
         </TabsList>
 
@@ -357,6 +379,9 @@ export default function Pass() {
               <Play className="h-5 w-5" />
               {starting ? "Startar…" : "Starta pass"}
             </Button>
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+              Alla dina steg räknas, även utan pass. Minuterna läggs till när du öppnar Hem.
+            </p>
           </section>
 
           <section aria-labelledby="history-heading" className="space-y-3">
@@ -391,16 +416,7 @@ export default function Pass() {
         </TabsContent>
 
         <TabsContent value="uppgifter" className="mt-6">
-          <section className="rounded-3xl border border-border bg-card p-6 text-center">
-            <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-muted text-foreground">
-              <Brain className="h-7 w-7" aria-hidden="true" />
-            </span>
-            <h2 className="mt-4 font-display text-xl font-bold">Uppgifter kommer snart</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Här kommer du att kunna tjäna skärmtid genom att lösa uppgifter, till exempel i matte, svenska och engelska.
-              Din förälder väljer ämnen och nivå.
-            </p>
-          </section>
+          <TaskPicker level={taskLevel} onLevelChange={changeTaskLevel} earnedToday={taskMinutesToday} onStart={setTaskSubject} />
         </TabsContent>
       </Tabs>
     </AppScreen>

@@ -59,7 +59,7 @@ it('lets the child switch to the Uppgifter part', () => {
   render(<Pass />);
   expect(screen.getByRole('tab', { name: /Rörelse/ })).toHaveAttribute('aria-selected', 'true');
   fireEvent.mouseDown(screen.getByRole('tab', { name: /Uppgifter/ }));
-  expect(screen.getByText('Uppgifter kommer snart')).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Välj ämne' })).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Starta pass' })).not.toBeInTheDocument();
 });
 
@@ -67,7 +67,23 @@ it('opens the Uppgifter part directly from a ?del=uppgifter link on Hem', () => 
   mocks.search = 'del=uppgifter';
   render(<Pass />);
   expect(screen.getByRole('tab', { name: /Uppgifter/ })).toHaveAttribute('aria-selected', 'true');
-  expect(screen.getByText('Uppgifter kommer snart')).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Välj ämne' })).toBeInTheDocument();
+});
+
+it('starts a round of five questions from a subject and saves it once at the end', async () => {
+  mocks.search = 'del=uppgifter';
+  mocks.rpc.mockResolvedValue({ data: { earned_minutes: 2, today_minutes: 2, balance: 12 }, error: null });
+  render(<Pass />);
+  fireEvent.click(screen.getByRole('button', { name: /Matte/ }));
+  for (let question = 1; question <= 5; question++) {
+    expect(screen.getByText(`Fråga ${question} av 5`)).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole('button', { pressed: false })[0]);
+    fireEvent.click(screen.getByRole('button', { name: question === 5 ? 'Se resultat' : 'Nästa fråga' }));
+  }
+  await screen.findByText('12 min');
+  expect(screen.getByText('+2 min')).toBeInTheDocument();
+  expect(mocks.rpc).toHaveBeenCalledTimes(1);
+  expect(mocks.rpc).toHaveBeenCalledWith('complete_task_round', expect.objectContaining({ p_subject: 'matte', p_level: 1, p_total: 5 }));
 });
 
 it('updates each received step and earned minute while the pass stays active', async () => {

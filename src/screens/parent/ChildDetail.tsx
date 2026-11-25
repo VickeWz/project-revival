@@ -20,6 +20,7 @@ import { AppScreen } from "@/components/layout/AppScreen";
 import { Initial } from "@/components/Initial";
 import { UnlockStatus } from "@/components/parent/UnlockStatus";
 import { formatPassDistance } from "@/lib/pass-metrics";
+import { MINUTES_PER_CORRECT, TASK_DAILY_LIMIT } from "@/lib/tasks/rewards";
 import { cn } from "@/lib/utils";
 import { localDay, useChildWeek, type LinkedChild } from "@/hooks/useParentOverview";
 
@@ -51,7 +52,6 @@ export function ChildDetail({ child, refreshKey, onBack, onGive, onRemove }: Chi
   });
   const maxEarned = Math.max(1, ...week.map((day) => day.earned));
   const weekTotal = week.reduce((sum, day) => sum + day.earned, 0);
-  const todayLog = days.find((day) => day.day === today);
 
   return (
     <AppScreen
@@ -87,8 +87,7 @@ export function ChildDetail({ child, refreshKey, onBack, onGive, onRemove }: Chi
         <div className="rounded-3xl border border-border bg-card p-4">
           <p className="font-display text-2xl font-bold tabular-nums text-reward">+{child.earnedToday} min intjänat</p>
           <p className="text-sm text-muted-foreground">
-            {child.stepsToday.toLocaleString("sv-SE")} steg i pass
-            {todayLog ? ` · ${formatPassDistance(todayLog.distance)}` : ""}
+            Rörelse +{child.movementMinutesToday} min · Uppgifter +{child.taskMinutesToday} min
           </p>
         </div>
       </section>
@@ -130,7 +129,7 @@ export function ChildDetail({ child, refreshKey, onBack, onGive, onRemove }: Chi
         <h2 id="child-days" className="font-display text-lg font-semibold">Senaste dagarna</h2>
         {!loading && days.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-            Inga sparade pass de senaste 7 dagarna.
+            Ingen intjänad tid de senaste 7 dagarna.
           </p>
         ) : (
           <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
@@ -162,7 +161,7 @@ export function ChildDetail({ child, refreshKey, onBack, onGive, onRemove }: Chi
               <span className="text-primary">Ändra</span>
             </Button>
           </li>
-          <InfoRow icon={<Footprints className="h-5 w-5 text-reward" />} title="Skärmtid från steg" text="200 steg = 1 minut" />
+          <InfoRow icon={<Footprints className="h-5 w-5 text-reward" />} title="Skärmtid från steg" text="200 steg = 1 minut. Alla dagens steg räknas." />
           <InfoRow
             icon={<LockKeyhole className="h-5 w-5 text-primary" />}
             title="Spärrade appar"
@@ -170,9 +169,8 @@ export function ChildDetail({ child, refreshKey, onBack, onGive, onRemove }: Chi
           />
           <InfoRow
             icon={<Brain className="h-5 w-5" />}
-            title="Uppgifter"
-            text="Ämnen och nivå"
-            badge="Snart"
+            title="Uppgifter i matte, svenska och engelska"
+            text={`${MINUTES_PER_CORRECT} minut per rätt svar, högst ${TASK_DAILY_LIMIT} min per dag`}
           />
         </ul>
       </section>
