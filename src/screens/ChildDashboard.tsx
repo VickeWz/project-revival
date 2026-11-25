@@ -34,12 +34,12 @@ export default function ChildDashboard() {
     if (!profile?.id || !isChild) return;
     let cancelled = false;
     void supabase
-      .from("activity_logs")
-      .select("screen_time_earned")
-      .eq("user_id", profile.id)
-      .eq("logged_at", format(new Date(), "yyyy-MM-dd"))
+      .from("movement_day_credits")
+      .select("credited_minutes")
+      .eq("profile_id", profile.id)
+      .eq("day", format(new Date(), "yyyy-MM-dd"))
       .maybeSingle()
-      .then(({ data }) => { if (!cancelled) setEarnedToday((current) => current ?? data?.screen_time_earned ?? 0); });
+      .then(({ data }) => { if (!cancelled) setEarnedToday((current) => current ?? data?.credited_minutes ?? 0); });
     return () => { cancelled = true; };
   }, [profile?.id, isChild]);
 

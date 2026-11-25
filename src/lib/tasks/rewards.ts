@@ -1,6 +1,5 @@
 import { z } from "zod";
-import { format } from "date-fns";
-import { untypedFrom, untypedRpc } from "@/lib/untyped-db";
+import { supabase } from "@/integrations/supabase/client";
 import { buildRound, type Level, type Rng, type Subject, type TaskQuestion } from "./questions";
 import { MATH } from "./math";
 import { SWEDISH } from "./svenska";
@@ -46,7 +45,7 @@ export async function completeTaskRound(round: {
   total: number;
   startedAt: Date;
 }): Promise<TaskRoundResult> {
-  const { data, error } = await untypedRpc("complete_task_round", {
+  const { data, error } = await supabase.rpc("complete_task_round", {
     p_id: round.id,
     p_subject: round.subject,
     p_level: round.level,
@@ -61,10 +60,10 @@ export async function completeTaskRound(round: {
 
 /** Minutes from tasks today, or null when they cannot be read. */
 export async function loadTaskMinutesToday(profileId: string): Promise<number | null> {
-  const { data, error } = await untypedFrom("task_rounds")
+  const { data, error } = await supabase.from("task_rounds")
     .select("earned_minutes")
     .eq("profile_id", profileId)
-    .eq("day", format(new Date(), "yyyy-MM-dd"));
+    .eq("day", new Date().toLocaleDateString("sv-SE", { timeZone: "Europe/Stockholm" }));
   if (error) return null;
   return ((data ?? []) as Array<{ earned_minutes: number }>).reduce((sum, row) => sum + row.earned_minutes, 0);
 }

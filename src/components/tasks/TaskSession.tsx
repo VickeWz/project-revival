@@ -45,7 +45,7 @@ export function TaskSession({ subject, level, onExit, onSaved, onHome }: {
   const [confirmExit, setConfirmExit] = useState(false);
 
   const total = round.questions.length;
-  const question = round.questions[index]!;
+  const question = round.questions[index];
   const answered = selected !== null;
   const isLast = index === total - 1;
 
@@ -63,7 +63,7 @@ export function TaskSession({ subject, level, onExit, onSaved, onHome }: {
   }, [round, subject, level, correct, total, onSaved]);
 
   const answer = (option: number) => {
-    if (answered) return;
+    if (answered || !question) return;
     setSelected(option);
     if (option === question.answer) setCorrect((value) => value + 1);
   };
@@ -111,7 +111,7 @@ export function TaskSession({ subject, level, onExit, onSaved, onHome }: {
         ) : (
           <>
             <p role="alert" className="font-display text-xl font-bold">Kunde inte spara resultatet</p>
-            <p className="text-sm text-muted-foreground">Kontrollera att du är uppkopplad och försök igen. Du får inte minuterna dubbelt.</p>
+            <p className="text-sm text-muted-foreground">Resultatet kunde inte sparas just nu. Försök igen. Du får inte minuterna dubbelt.</p>
             <Button className="h-14 w-full max-w-sm text-base" onClick={() => void save()}>Försök igen</Button>
             <Button variant="ghost" className="h-12 w-full max-w-sm" onClick={onExit}>Avbryt</Button>
           </>
@@ -119,6 +119,8 @@ export function TaskSession({ subject, level, onExit, onSaved, onHome }: {
       </div>
     );
   }
+
+  if (!question) return null;
 
   return (
     <div className="flex min-h-screen flex-col bg-background">

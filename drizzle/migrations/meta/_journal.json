@@ -78,6 +78,13 @@
       "when": 1795634942557,
       "tag": "0010_share_current_daily_steps",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795642900897,
+      "tag": "0011_restore_task_and_daily_step_rewards",
+      "breakpoints": true
     }
   ]
 }

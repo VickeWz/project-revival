@@ -292,6 +292,38 @@ export type Database = {
           },
         ]
       }
+      movement_day_credits: {
+        Row: {
+          credited_minutes: number
+          daily_steps: number
+          day: string
+          pass_steps: number
+          profile_id: string
+        }
+        Insert: {
+          credited_minutes?: number
+          daily_steps?: number
+          day: string
+          pass_steps?: number
+          profile_id: string
+        }
+        Update: {
+          credited_minutes?: number
+          daily_steps?: number
+          day?: string
+          pass_steps?: number
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movement_day_credits_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       parent_child_links: {
         Row: {
           child_id: string
@@ -551,11 +583,62 @@ export type Database = {
           },
         ]
       }
+      task_rounds: {
+        Row: {
+          correct: number
+          created_at: string
+          day: string
+          earned_minutes: number
+          id: string
+          level: number
+          profile_id: string
+          started_at: string
+          subject: string
+          total: number
+        }
+        Insert: {
+          correct: number
+          created_at?: string
+          day: string
+          earned_minutes: number
+          id: string
+          level: number
+          profile_id: string
+          started_at: string
+          subject: string
+          total: number
+        }
+        Update: {
+          correct?: number
+          created_at?: string
+          day?: string
+          earned_minutes?: number
+          id?: string
+          level?: number
+          profile_id?: string
+          started_at?: string
+          subject?: string
+          total?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_rounds_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
+      claim_daily_steps: {
+        Args: { p_day: string; p_steps: number }
+        Returns: Json
+      }
       complete_step_pass: {
         Args: {
           p_active_minutes: number
@@ -565,6 +648,17 @@ export type Database = {
           p_id: string
           p_started_at: string
           p_steps: number
+        }
+        Returns: Json
+      }
+      complete_task_round: {
+        Args: {
+          p_correct: number
+          p_id: string
+          p_level: number
+          p_started_at: string
+          p_subject: string
+          p_total: number
         }
         Returns: Json
       }
