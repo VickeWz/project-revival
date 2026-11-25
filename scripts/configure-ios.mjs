@@ -20,3 +20,11 @@ for (const [key, value] of Object.entries(descriptions)) {
 }
 console.log('Motion and Apple Health privacy descriptions are configured. Enable HealthKit in Xcode Signing & Capabilities.');
 console.log('Skärmtid: följ docs/iphone-screen-time.md för Family Controls, App Groups och monitor-tillägget. Dessa kräver Xcode och korrekt signering.');
+// Screen Time requires iOS 16; cap sync regenerates CapApp-SPM with iOS 15.
+import { readFileSync, writeFileSync } from 'node:fs';
+const spm = resolve('ios/App/CapApp-SPM/Package.swift');
+if (existsSync(spm)) {
+  const src = readFileSync(spm, 'utf8');
+  const next = src.replace(/\.iOS\(\.v1[0-5]\)/g, '.iOS(.v16)');
+  if (next !== src) { writeFileSync(spm, next); console.log('CapApp-SPM: lägsta iOS-version satt till 16.'); }
+}
