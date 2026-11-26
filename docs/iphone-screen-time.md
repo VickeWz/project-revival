@@ -73,6 +73,12 @@ Nästa kontroll är monitor-tillägget. Saknas det visar appen "Skärmtidstillä
 
 Pluginen vägrar aktivering om App Group eller det inbäddade monitor-tillägget saknas. Markera inte konfigurationen som klar utan rätt signering.
 
+**Om appen säger "Skärmtidstillägget är inte installerat":** texten efter kolonet säger vad som saknas. Appen kontrollerar tre saker:
+1. `GameRunMonitorConfigured` = YES i appens Info (target App → Info). Xcode föreslår typen String; välj Boolean.
+2. `GameRunMonitor.appex` under App → Build Phases → Embed Foundation Extensions (Destination: PlugIns, Code Sign On Copy ibockad).
+3. `GameRunMonitor` = YES i tilläggets Info (target GameRunMonitor → Info).
+Bygg sedan om med Clean Build Folder och ta bort appen från telefonen innan du kör igen.
+
 ## 4. Genomför första testet
 
 1. Logga in som barn i GameRun. Startsidan visar **Min skärmtid**.

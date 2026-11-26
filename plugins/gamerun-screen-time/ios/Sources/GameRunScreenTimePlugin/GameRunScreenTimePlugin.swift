@@ -24,13 +24,35 @@ public class GameRunScreenTimePlugin: CAPPlugin, CAPBridgedPlugin {
         guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: ScreenTimeState.group) != nil else {
             call.reject("App Groups saknas i signeringen (\(ScreenTimeState.group)). Se iPhone-guiden, steg 2."); return false
         }
-        guard Bundle.main.object(forInfoDictionaryKey: "GameRunMonitorConfigured") as? Bool == true,
-              let plugins = Bundle.main.builtInPlugInsURL,
-              let bundles = try? FileManager.default.contentsOfDirectory(at: plugins, includingPropertiesForKeys: nil),
-              bundles.contains(where: { Bundle(url: $0)?.object(forInfoDictionaryKey: "GameRunMonitor") as? Bool == true }) else {
-            call.reject("Skärmtidstillägget är inte installerat. Följ iPhone-guiden, steg 3."); return false
+        if let problem = monitorProblem() {
+            call.reject("Skärmtidstillägget är inte installerat: \(problem)"); return false
         }
         return true
+    }
+    /// Info.plist values added in Xcode's Info tab default to String, so accept YES/true as text too.
+    private func flag(_ value: Any?) -> Bool {
+        if let bool = value as? Bool { return bool }
+        if let text = value as? String { return ["yes", "true", "1"].contains(text.lowercased()) }
+        if let number = value as? NSNumber { return number.boolValue }
+        return false
+    }
+    /// Says exactly which part of the monitor setup is missing, so it can be fixed in Xcode.
+    private func monitorProblem() -> String? {
+        guard flag(Bundle.main.object(forInfoDictionaryKey: "GameRunMonitorConfigured")) else {
+            return "appens Info saknar raden GameRunMonitorConfigured = YES (target App → Info)."
+        }
+        let folders = [Bundle.main.builtInPlugInsURL, Bundle.main.bundleURL.appendingPathComponent("Extensions")].compactMap { $0 }
+        let extensions = folders
+            .flatMap { (try? FileManager.default.contentsOfDirectory(at: $0, includingPropertiesForKeys: nil)) ?? [] }
+            .filter { $0.pathExtension == "appex" }
+        guard !extensions.isEmpty else {
+            return "inget tillägg är inbäddat i appen (target App → Build Phases → Embed Foundation Extensions ska innehålla GameRunMonitor.appex)."
+        }
+        guard extensions.contains(where: { flag(Bundle(url: $0)?.object(forInfoDictionaryKey: "GameRunMonitor")) }) else {
+            let names = extensions.map { $0.lastPathComponent }.joined(separator: ", ")
+            return "tillägget (\(names)) saknar raden GameRunMonitor = YES (target GameRunMonitor → Info)."
+        }
+        return nil
     }
     private func millis(_ date: Date?) -> Double { (date?.timeIntervalSince1970 ?? 0) * 1000 }
     private func payload() -> [String: Any] {
