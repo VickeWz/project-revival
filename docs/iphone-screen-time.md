@@ -9,7 +9,7 @@
   - **Valda appar**: bara de valda apparna, kategorierna och webbplatserna spärras. Välj inte GameRun eller en kategori som omfattar GameRun.
 - Spärrarna öppnas under tidsfönstret och spärras igen av ett Device Activity Monitor-tillägg, även när GameRun är stängd.
 - Hemskärmen, nödsamtal och vissa systemfunktioner går aldrig att spärra. Vilka inbyggda appar som spärras under Hela telefonen måste testas.
-- Appvalen kan ändras på barnets telefon utan kod än så länge. Föräldrakod för ändringar är nästa steg.
+- Låsläge och appval ändras bara efter en sexsiffrig **föräldrakod**. Föräldern visar den i GameRun under barnets sida → **Låsta och tillåtna appar** → **Visa kod**. Koden gäller i 5 minuter och kan användas en gång. Efter en giltig kod är ändringar öppna i 10 minuter eller tills panelen stängs. Fem fel spärrar barnkontot i 15 minuter. Spärren finns i GameRun; Apples appväljare i sig kräver ingen kod.
 - Ingen påhittad blockering visas på webben. Koden är tillagd, men Swift-kompilering, rättigheter och faktisk blockering är **inte verifierade på iPhone** här.
 - De befintliga skärmarna är fortfarande Capacitor-skärmar; skärmtidsdelen är Swift. Detta gör inte hela gränssnittet till en ren SwiftUI-app.
 
@@ -66,7 +66,8 @@ Pluginen vägrar aktivering om App Group eller det inbäddade monitor-tillägget
 
 1. Logga in som barn i GameRun. Startsidan visar **Min skärmtid**.
 2. Tryck **Godkänn med förälder**, slutför Apples familjegodkännande.
-3. Tryck **Välj alltid tillåtna appar med förälder** och välj **GameRun** och Telefon. Spara.
+3. Tryck **Välj alltid tillåtna appar med förälder**. Föräldern öppnar barnets sida i sin GameRun, trycker **Visa kod** och barnet skriver in koden. Tryck **Alltid tillåtna appar**, välj **GameRun** och Telefon och spara.
+   - Kontrollera också: fel kod ger "N försök kvar", samma kod två gånger nekas, och efter fem fel spärras inmatningen i 15 minuter.
 4. Öppna några andra appar och Safari. De ska visa Apples blockeringsskärm. GameRun och Telefon ska gå att öppna.
    - Kontrollera särskilt om GameRun spärras om den **inte** är vald som tillåten. Spärras den inte kan varningen om GameRun i appen tas bort.
    - Anteckna vilka inbyggda appar (Meddelanden, Kamera, Inställningar, Kartor) som spärras.

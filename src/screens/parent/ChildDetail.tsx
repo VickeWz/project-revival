@@ -19,6 +19,7 @@ import {
 import { AppScreen } from "@/components/layout/AppScreen";
 import { Initial } from "@/components/Initial";
 import { UnlockStatus } from "@/components/parent/UnlockStatus";
+import { DeviceChangeCode } from "@/components/parent/DeviceChangeCode";
 import { formatPassDistance } from "@/lib/pass-metrics";
 import { MINUTES_PER_CORRECT, TASK_DAILY_LIMIT } from "@/lib/tasks/rewards";
 import { cn } from "@/lib/utils";
@@ -39,6 +40,7 @@ const genitive = (name: string) => (/[sxz]$/i.test(name) ? name : `${name}s`);
 export function ChildDetail({ child, refreshKey, onBack, onGive, onRemove }: ChildDetailProps) {
   const { dailyStepGoal, updateGoal, loading: goalLoading, error: goalError } = useActivityGoal(child.id);
   const [goalOpen, setGoalOpen] = useState(false);
+  const [codeOpen, setCodeOpen] = useState(false);
   const { days, loading } = useChildWeek(child.id, refreshKey);
   const today = localDay(new Date());
   const week = Array.from({ length: 7 }, (_, index) => {
@@ -162,11 +164,20 @@ export function ChildDetail({ child, refreshKey, onBack, onGive, onRemove }: Chi
             </Button>
           </li>
           <InfoRow icon={<Footprints className="h-5 w-5 text-reward" />} title="Skärmtid från steg" text="200 steg = 1 minut. Alla dagens steg räknas." />
-          <InfoRow
-            icon={<LockKeyhole className="h-5 w-5 text-primary" />}
-            title="Spärrade appar"
-            text={`Väljs tillsammans på ${genitive(child.name)} iPhone`}
-          />
+          <li>
+            <Button variant="ghost" onClick={() => setCodeOpen(true)} className="h-auto min-h-16 w-full justify-start gap-3 rounded-none px-4 py-3 text-left">
+              <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+                <LockKeyhole className="h-5 w-5 text-primary" />
+              </span>
+              <span className="min-w-0 flex-1 whitespace-normal">
+                <span className="block font-semibold">Låsta och tillåtna appar</span>
+                <span className="block text-sm font-normal text-muted-foreground">
+                  Ändras på {genitive(child.name)} iPhone med en kod från dig
+                </span>
+              </span>
+              <span className="shrink-0 text-primary">Visa kod</span>
+            </Button>
+          </li>
           <InfoRow
             icon={<Brain className="h-5 w-5" />}
             title="Uppgifter i matte, svenska och engelska"
@@ -176,6 +187,7 @@ export function ChildDetail({ child, refreshKey, onBack, onGive, onRemove }: Chi
       </section>
 
       <ActivityGoalModal open={goalOpen} onOpenChange={setGoalOpen} currentGoal={dailyStepGoal} onSave={updateGoal} />
+      <DeviceChangeCode childId={child.id} phone={`${genitive(child.name)} iPhone`} open={codeOpen} onOpenChange={setCodeOpen} />
       <AlertDialog>
         <AlertDialogTrigger asChild>
           <Button variant="ghost" className="h-12 w-full text-destructive hover:bg-destructive/10 hover:text-destructive">

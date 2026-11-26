@@ -81,6 +81,8 @@ export function ScreenTimeControl() {
   const canActivate = !!pending.current || (Number.isInteger(chosen) && chosen >= 1 && chosen <= maxMinutes);
   const mode = status ? lockModeOf(status) : 'selected';
   const allowed = status?.allowedCount ?? 0;
+  // Every change to the lock goes through the sheet, which asks for a parent's code first.
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const pickAllowed = () => void perform(async () => setStatus(await screenTimePlugin.selectAllowedApps()));
   const pickBlocked = () => void perform(async () => setStatus(await screenTimePlugin.selectApps()));
 
@@ -107,7 +109,7 @@ export function ScreenTimeControl() {
         </div>
       ) : mode === 'all' && status.needsAllowedApps ? (
         <div className="space-y-2">
-          <Button variant="outline" className="h-12 w-full" disabled={busy} onClick={pickAllowed}>
+          <Button variant="outline" className="h-12 w-full" disabled={busy} onClick={() => setSettingsOpen(true)}>
             <ShieldCheck className="h-4 w-4" />Välj alltid tillåtna appar med förälder
           </Button>
           <p className="text-xs text-muted-foreground">
@@ -115,7 +117,7 @@ export function ScreenTimeControl() {
           </p>
         </div>
       ) : mode === 'selected' && status.selectionCount === 0 ? (
-        <Button variant="outline" className="h-12 w-full" disabled={busy} onClick={pickBlocked}>
+        <Button variant="outline" className="h-12 w-full" disabled={busy} onClick={() => setSettingsOpen(true)}>
           <LockKeyhole className="h-4 w-4" />Välj appar med förälder
         </Button>
       ) : active > 0 ? (
@@ -158,6 +160,9 @@ export function ScreenTimeControl() {
           <LockSettingsDrawer
             status={status}
             busy={busy}
+            error={error}
+            open={settingsOpen}
+            onOpenChange={setSettingsOpen}
             onSetMode={(next) => void perform(async () => setStatus(await screenTimePlugin.setLockMode({ mode: next })))}
             onSelectAllowed={pickAllowed}
             onSelectBlocked={pickBlocked}
