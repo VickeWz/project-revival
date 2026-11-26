@@ -1,309 +1,216 @@
-// @ts-nocheck -- imported code written for a looser TypeScript config
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Button } from "@/components/ui/button";
-import { 
-  ArrowLeft, 
-  Plus,
-  Trash2,
-  Gamepad2,
-  Video,
-  Music,
-  MessageCircle,
-  Camera,
-  Globe,
-  Clock,
-  Minus
-} from "lucide-react";
-import { useNavigate, useSearchParams } from "@/lib/router-compat";
+import { useCallback, useEffect, useState } from "react";
+import { Loader2, Plus, Timer, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+import { AppScreen } from "@/components/layout/AppScreen";
+import { MinutePicker } from "@/components/MinutePicker";
+import { useNavigate, useSearchParams } from "@/lib/router-compat";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { cn } from "@/lib/utils";
 
 interface AppLimit {
   id: string;
   app_name: string;
-  category: string;
   daily_limit_minutes: number;
   is_enabled: boolean;
 }
 
-const PRESET_APPS = [
-  { name: "YouTube", category: "Entertainment", icon: Video },
-  { name: "TikTok", category: "Social", icon: Camera },
-  { name: "Instagram", category: "Social", icon: Camera },
-  { name: "Snapchat", category: "Social", icon: MessageCircle },
-  { name: "Roblox", category: "Games", icon: Gamepad2 },
-  { name: "Minecraft", category: "Games", icon: Gamepad2 },
-  { name: "Fortnite", category: "Games", icon: Gamepad2 },
-  { name: "Spotify", category: "Entertainment", icon: Music },
-  { name: "Netflix", category: "Entertainment", icon: Video },
-  { name: "Safari", category: "Productivity", icon: Globe },
-  { name: "Chrome", category: "Productivity", icon: Globe },
-];
+const SUGGESTIONS = ["Sociala medier", "Spel", "Video", "Webben"];
+const MIN_MINUTES = 5;
+const MAX_MINUTES = 240;
+const genitive = (name: string) => (/[sxz]$/i.test(name) ? name : `${name}s`);
 
-const getCategoryIcon = (category: string) => {
-  switch (category) {
-    case "Games": return Gamepad2;
-    case "Entertainment": return Video;
-    case "Social": return Camera;
-    default: return Globe;
-  }
-};
-
-const getCategoryColor = (category: string) => {
-  switch (category) {
-    case "Games": return "bg-green-500";
-    case "Entertainment": return "bg-red-500";
-    case "Social": return "bg-pink-500";
-    default: return "bg-blue-500";
-  }
-};
-
+/**
+ * Appgränser for one child (?childId=): a name and minutes per day. The apps for each limit are
+ * chosen on the child's iPhone with a parent code, because Apple's app choices never leave the phone.
+ */
 export default function AppLimits() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const childId = searchParams.get("childId");
   const { profile } = useAuth();
-  
+
   const [limits, setLimits] = useState<AppLimit[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showAddDialog, setShowAddDialog] = useState(false);
   const [childName, setChildName] = useState("");
+  const [editing, setEditing] = useState<AppLimit | "new" | null>(null);
+  const [name, setName] = useState("");
+  const [minutes, setMinutes] = useState(30);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    if (profile?.id && childId) {
-      fetchLimits();
-      fetchChildName();
-    }
+  const fetchLimits = useCallback(async () => {
+    if (!profile?.id || !childId) return;
+    const { data } = await supabase
+      .from("app_limits")
+      .select("id, app_name, daily_limit_minutes, is_enabled")
+      .eq("parent_id", profile.id)
+      .eq("child_id", childId)
+      .order("created_at", { ascending: true });
+    setLimits(data ?? []);
+    setLoading(false);
   }, [profile?.id, childId]);
 
-  const fetchChildName = async () => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("display_name")
-      .eq("id", childId)
-      .maybeSingle();
-    
-    if (data) setChildName(data.display_name);
+  useEffect(() => {
+    if (!childId) return;
+    void fetchLimits();
+    void supabase.from("profiles").select("display_name").eq("id", childId).maybeSingle()
+      .then(({ data }) => { if (data) setChildName(data.display_name); });
+  }, [childId, fetchLimits]);
+
+  const back = () => navigate(childId ? `/parent?barn=${childId}` : "/parent");
+  const phone = childName ? `${genitive(childName)} iPhone` : "barnets iPhone";
+
+  const open = (limit: AppLimit | "new") => {
+    setEditing(limit);
+    setName(limit === "new" ? "" : limit.app_name);
+    setMinutes(limit === "new" ? 30 : limit.daily_limit_minutes);
   };
 
-  const fetchLimits = async () => {
-    if (!profile?.id || !childId) return;
-    
-    const { data } = await supabase
-      .from("app_limits")
-      .select("*")
-      .eq("parent_id", profile.id)
-      .eq("child_id", childId);
-
-    if (data) setLimits(data);
-    setLoading(false);
-  };
-
-  const handleAddApp = async (appName: string, category: string) => {
-    if (!profile?.id || !childId) return;
-    
-    const { error } = await supabase
-      .from("app_limits")
-      .insert({
-        parent_id: profile.id,
-        child_id: childId,
-        app_name: appName,
-        category: category,
-        daily_limit_minutes: 60,
-        is_enabled: true,
-      });
-
+  const save = async () => {
+    if (!profile?.id || !childId || !editing || saving) return;
+    const trimmed = name.trim();
+    if (!trimmed || trimmed.length > 40) {
+      toast.error("Ge gränsen ett namn, högst 40 tecken.");
+      return;
+    }
+    setSaving(true);
+    const { error } = editing === "new"
+      ? await supabase.from("app_limits").insert({
+          parent_id: profile.id, child_id: childId, app_name: trimmed, category: "Other", daily_limit_minutes: minutes, is_enabled: true,
+        })
+      : await supabase.from("app_limits").update({ app_name: trimmed, daily_limit_minutes: minutes }).eq("id", editing.id);
+    setSaving(false);
     if (error) {
-      if (error.code === "23505") {
-        toast.error("Appen har redan en gräns");
-      } else {
-        toast.error("Kunde inte lägga till appgränsen");
-      }
-    } else {
-      toast.success(`Gräns tillagd för ${appName}`);
-      fetchLimits();
-      setShowAddDialog(false);
+      toast.error(error.code === "23505" ? "Det finns redan en gräns med det namnet." : "Kunde inte spara gränsen.");
+      return;
     }
+    toast.success(editing === "new" ? "Gränsen är tillagd" : "Gränsen är ändrad", {
+      description: `Välj apparna på ${phone} med en kod från dig.`,
+    });
+    setEditing(null);
+    void fetchLimits();
   };
 
-  const handleRemoveApp = async (id: string, name: string) => {
-    const { error } = await supabase
-      .from("app_limits")
-      .delete()
-      .eq("id", id);
-
+  const toggle = async (limit: AppLimit, enabled: boolean) => {
+    setLimits((prev) => prev.map((l) => (l.id === limit.id ? { ...l, is_enabled: enabled } : l)));
+    const { error } = await supabase.from("app_limits").update({ is_enabled: enabled }).eq("id", limit.id);
     if (error) {
-      toast.error("Kunde inte ta bort appgränsen");
-    } else {
-      toast.success(`Gräns borttagen för ${name}`);
-      setLimits(prev => prev.filter(l => l.id !== id));
+      toast.error("Kunde inte ändra gränsen.");
+      void fetchLimits();
     }
   };
 
-  const handleUpdateLimit = async (id: string, minutes: number) => {
-    const clampedMinutes = Math.max(5, Math.min(480, minutes));
-    
-    const { error } = await supabase
-      .from("app_limits")
-      .update({ daily_limit_minutes: clampedMinutes })
-      .eq("id", id);
-
-    if (!error) {
-      setLimits(prev => prev.map(l => 
-        l.id === id ? { ...l, daily_limit_minutes: clampedMinutes } : l
-      ));
+  const remove = async (limit: AppLimit) => {
+    const { error } = await supabase.from("app_limits").delete().eq("id", limit.id);
+    if (error) {
+      toast.error("Kunde inte ta bort gränsen.");
+      return;
     }
+    setEditing(null);
+    setLimits((prev) => prev.filter((l) => l.id !== limit.id));
+    toast.success(`${limit.app_name} är borttagen`);
   };
-
-  const formatTime = (minutes: number) => {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    if (hours === 0) return `${mins}m`;
-    if (mins === 0) return `${hours}h`;
-    return `${hours}h ${mins}m`;
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
-  }
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-50 safe-top gradient-glass border-b border-border/50">
-        <div className="max-w-lg mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-            <div>
-              <h1 className="font-display font-bold text-xl text-foreground">Appgränser</h1>
-              {childName && <p className="text-sm text-muted-foreground">{childName}</p>}
-            </div>
-          </div>
-          <Button onClick={() => setShowAddDialog(true)} size="sm">
-            <Plus className="w-4 h-4 mr-1" />
-            Lägg till
-          </Button>
+    <AppScreen nav={false} back={{ label: childName || "Tillbaka", onClick: back }} title="Appgränser">
+      <p className="-mt-4 text-muted-foreground">
+        Begränsa till exempel sociala medier till 30 minuter om dagen. Gränsen gäller även när telefonen är upplåst med intjänad tid.
+      </p>
+
+      {loading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-primary" aria-label="Laddar" />
         </div>
-      </header>
+      ) : limits.length === 0 ? (
+        <p className="rounded-2xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">Inga appgränser ännu.</p>
+      ) : (
+        <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
+          {limits.map((limit) => (
+            <li key={limit.id} className="flex min-h-16 items-center gap-3 px-4 py-3">
+              <button type="button" onClick={() => open(limit)} className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+                  <Timer className="h-5 w-5 text-primary" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate font-semibold">{limit.app_name}</span>
+                  <span className="block text-sm text-muted-foreground">{limit.daily_limit_minutes} min per dag</span>
+                </span>
+              </button>
+              <Switch
+                aria-label={`${limit.app_name} på`}
+                checked={limit.is_enabled}
+                onCheckedChange={(enabled) => void toggle(limit, enabled)}
+              />
+            </li>
+          ))}
+        </ul>
+      )}
 
-      <main className="max-w-lg mx-auto px-6 py-8">
-        {limits.length === 0 ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center py-12 bg-card rounded-2xl"
-          >
-            <Clock className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="font-display font-bold text-lg text-foreground mb-2">Inga appgränser sparade</h3>
-            <p className="text-muted-foreground mb-6">Spara önskade dagliga tidsgränser för appar</p>
-            <Button onClick={() => setShowAddDialog(true)}>
-              <Plus className="w-4 h-4 mr-2" />
-              Lägg till appgräns
-            </Button>
-          </motion.div>
-        ) : (
-          <div className="space-y-3">
-            {limits.map((limit, index) => {
-              const IconComponent = getCategoryIcon(limit.category);
-              return (
-                <motion.div
-                  key={limit.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className="bg-card rounded-2xl p-4"
-                >
-                  <div className="flex items-center gap-4 mb-3">
-                    <div className={`w-10 h-10 rounded-xl ${getCategoryColor(limit.category)} flex items-center justify-center`}>
-                      <IconComponent className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium text-foreground">{limit.app_name}</p>
-                      <p className="text-xs text-muted-foreground">{({"Games": "Spel", "Entertainment": "Underhållning", "Social": "Socialt", "Productivity": "Produktivitet", "Communication": "Kommunikation", "Utilities": "Verktyg", "Health": "Hälsa", "Education": "Utbildning"} as Record<string, string>)[limit.category] ?? limit.category}</p>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleRemoveApp(limit.id, limit.app_name)}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </div>
-                  
-                  <div className="flex items-center justify-between bg-muted/30 rounded-lg p-2">
-                    <span className="text-sm text-muted-foreground">Daglig gräns:</span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleUpdateLimit(limit.id, limit.daily_limit_minutes - 15)}
-                        className="w-8 h-8 rounded-full bg-muted flex items-center justify-center"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <span className="text-foreground font-medium min-w-[60px] text-center">
-                        {formatTime(limit.daily_limit_minutes)}
-                      </span>
-                      <button
-                        onClick={() => handleUpdateLimit(limit.id, limit.daily_limit_minutes + 15)}
-                        className="w-8 h-8 rounded-full bg-muted flex items-center justify-center"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        )}
+      <Button className="h-14 w-full text-base" onClick={() => open("new")}>
+        <Plus className="h-5 w-5" aria-hidden="true" />
+        Lägg till gräns
+      </Button>
 
-        {/* Info */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="bg-muted/30 rounded-2xl p-4 mt-6"
-        >
-          <p className="text-sm text-muted-foreground">Dina val sparas på kontot. Blockering av andra appar på iPhone är inte ansluten ännu.</p>
-        </motion.div>
-      </main>
+      <ul className="space-y-1.5 rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
+        <li>• Apparna för varje gräns väljs på {phone} under Hem → Ändra appar och lås, med en kod från dig. Apple låter inga appval lämna telefonen.</li>
+        <li>• När tiden är slut spärras apparna resten av dagen. De öppnas igen vid midnatt.</li>
+        <li>• Ändrar du en gräns eller apparna börjar dagens användning räknas från noll.</li>
+      </ul>
 
-      {/* Add App Dialog */}
-      <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
-        <DialogContent className="max-w-sm bg-card border-border">
-          <DialogHeader>
-            <DialogTitle>Lägg till appgräns</DialogTitle>
-          </DialogHeader>
-          <div className="max-h-80 overflow-y-auto">
+      <Drawer open={editing !== null} onOpenChange={(next) => { if (!next) setEditing(null); }}>
+        <DrawerContent className="border-border bg-card">
+          <div className="mx-auto w-full max-w-lg space-y-6 px-5 bottom-bar-safe">
+            <DrawerHeader className="px-0 text-left">
+              <DrawerTitle className="font-display text-xl">{editing === "new" ? "Ny appgräns" : "Ändra appgräns"}</DrawerTitle>
+              <DrawerDescription>Namnet visas för barnet när apparna väljs på {phone}.</DrawerDescription>
+            </DrawerHeader>
             <div className="space-y-2">
-              {PRESET_APPS.filter(app => !limits.some(l => l.app_name === app.name)).map((app) => (
-                <button
-                  key={app.name}
-                  onClick={() => handleAddApp(app.name, app.category)}
-                  className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted/50 transition-colors text-left"
-                >
-                  <div className={`w-10 h-10 rounded-xl ${getCategoryColor(app.category)} flex items-center justify-center`}>
-                    <app.icon className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-foreground">{app.name}</p>
-                    <p className="text-xs text-muted-foreground">{({"Games": "Spel", "Entertainment": "Underhållning", "Social": "Socialt", "Productivity": "Produktivitet", "Communication": "Kommunikation", "Utilities": "Verktyg", "Health": "Hälsa", "Education": "Utbildning"} as Record<string, string>)[app.category] ?? app.category}</p>
-                  </div>
-                </button>
-              ))}
+              <Label htmlFor="limit-name" className="font-semibold text-foreground">Namn</Label>
+              <Input
+                id="limit-name"
+                value={name}
+                maxLength={40}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Till exempel Sociala medier"
+                className="h-14 rounded-2xl border-border bg-card text-base"
+              />
+              <div className="flex flex-wrap gap-2 pt-1">
+                {SUGGESTIONS.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    onClick={() => setName(suggestion)}
+                    className={cn(
+                      "h-9 rounded-full px-3 text-sm font-semibold transition-colors",
+                      name === suggestion ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                    )}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <MinutePicker label="Minuter per dag" value={minutes} onChange={setMinutes} min={MIN_MINUTES} max={MAX_MINUTES} presets={[15, 30, 60, 90]} disabled={saving} />
+            <div className="space-y-2">
+              <Button className="h-14 w-full text-base" onClick={() => void save()} disabled={saving || !name.trim()}>
+                {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                {editing === "new" ? "Lägg till" : "Spara"}
+              </Button>
+              {editing && editing !== "new" && (
+                <Button variant="ghost" className="h-12 w-full text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => void remove(editing)}>
+                  <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  Ta bort gränsen
+                </Button>
+              )}
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+        </DrawerContent>
+      </Drawer>
+    </AppScreen>
   );
 }

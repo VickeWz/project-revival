@@ -1,9 +1,13 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useNavigate } from "@/lib/router-compat";
+import { describeDowntime, type DowntimeRow } from "@/lib/device-rules";
 import { useActivityGoal } from "@/hooks/useActivityGoal";
 import { ActivityGoalModal } from "@/components/settings/ActivityGoalModal";
 import { format, subDays } from "date-fns";
 import { sv } from "date-fns/locale";
-import { Brain, CirclePlus, Footprints, Loader2, LockKeyhole } from "lucide-react";
+import { Brain, ChevronRight, CirclePlus, Footprints, Loader2, LockKeyhole, Moon, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
@@ -41,6 +45,23 @@ export function ChildDetail({ child, refreshKey, onBack, onGive, onRemove }: Chi
   const { dailyStepGoal, updateGoal, loading: goalLoading, error: goalError } = useActivityGoal(child.id);
   const [goalOpen, setGoalOpen] = useState(false);
   const [codeOpen, setCodeOpen] = useState(false);
+  const navigate = useNavigate();
+  const { profile } = useAuth();
+  // This parent's own downtime schedule and limits for the child (RLS shows only their own rows).
+  const [rules, setRules] = useState<{ downtime: DowntimeRow | null; limits: number }>({ downtime: null, limits: 0 });
+  useEffect(() => {
+    if (!profile?.id) return;
+    let cancelled = false;
+    void Promise.all([
+      supabase.from("downtime_schedules").select("start_time, end_time, days_enabled, is_enabled")
+        .eq("parent_id", profile.id).eq("child_id", child.id).maybeSingle(),
+      supabase.from("app_limits").select("id", { count: "exact", head: true })
+        .eq("parent_id", profile.id).eq("child_id", child.id).eq("is_enabled", true),
+    ]).then(([downtime, limits]) => {
+      if (!cancelled) setRules({ downtime: downtime.data ?? null, limits: limits.count ?? 0 });
+    });
+    return () => { cancelled = true; };
+  }, [profile?.id, child.id, refreshKey]);
   const { days, loading } = useChildWeek(child.id, refreshKey);
   const today = localDay(new Date());
   const week = Array.from({ length: 7 }, (_, index) => {
@@ -178,6 +199,18 @@ export function ChildDetail({ child, refreshKey, onBack, onGive, onRemove }: Chi
               <span className="shrink-0 text-primary">Visa kod</span>
             </Button>
           </li>
+          <RuleLink
+            icon={<Moon className="h-5 w-5 text-primary" />}
+            title="Skärmfri tid"
+            text={describeDowntime(rules.downtime)}
+            onClick={() => navigate(`/parent/downtime?childId=${child.id}`)}
+          />
+          <RuleLink
+            icon={<Timer className="h-5 w-5 text-primary" />}
+            title="Appgränser"
+            text={rules.limits === 0 ? "Inga gränser" : `${rules.limits} ${rules.limits === 1 ? "gräns" : "gränser"}`}
+            onClick={() => navigate(`/parent/app-limits?childId=${child.id}`)}
+          />
           <InfoRow
             icon={<Brain className="h-5 w-5" />}
             title="Uppgifter i matte, svenska och engelska"
@@ -210,6 +243,23 @@ export function ChildDetail({ child, refreshKey, onBack, onGive, onRemove }: Chi
         </AlertDialogContent>
       </AlertDialog>
     </AppScreen>
+  );
+}
+
+function RuleLink({ icon, title, text, onClick }: { icon: ReactNode; title: string; text: string; onClick: () => void }) {
+  return (
+    <li>
+      <button type="button" onClick={onClick} className="flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40">
+        <span aria-hidden="true" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted">
+          {icon}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-semibold">{title}</span>
+          <span className="block text-sm text-muted-foreground">{text}</span>
+        </span>
+        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+      </button>
+    </li>
   );
 }
 

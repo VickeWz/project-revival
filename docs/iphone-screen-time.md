@@ -8,6 +8,8 @@
   - **Hela telefonen** (standard): allt spärras med Apples Managed Settings (`.all(except:)`) utom **alltid tillåtna** appar och webbplatser. GameRun måste vara bland dem, annars kan barnet inte tjäna tid. Kategorier kan inte vara undantag, bara enskilda appar och webbplatser. Låset slås inte på förrän minst en app är vald som tillåten; tills dess gäller läget Valda appar.
   - **Valda appar**: bara de valda apparna, kategorierna och webbplatserna spärras. Välj inte GameRun eller en kategori som omfattar GameRun.
 - Spärrarna öppnas under tidsfönstret och spärras igen av ett Device Activity Monitor-tillägg, även när GameRun är stängd.
+- **Skärmfri tid**: föräldern väljer tider och dagar på barnets sida. Under skärmfri tid är hela telefonen låst utom alltid tillåtna appar, och intjänad tid kan inte användas. En upplåsning får inte heller sträcka sig in i skärmfri tid. Monitor-tillägget låser vid starttiden även när GameRun är stängd. Schemat når telefonen när GameRun öppnas.
+- **Appgränser**: föräldern skapar en gräns med namn och minuter per dag. Apparna för gränsen väljs på barnets telefon under **Ändra appar och lås** (med föräldrakod). När tiden är slut spärras de resten av dagen, även under upplåsning. Ändrade gränser eller appval gör att dagens användning räknas från noll.
 - Hemskärmen, nödsamtal och vissa systemfunktioner går aldrig att spärra. Vilka inbyggda appar som spärras under Hela telefonen måste testas.
 - Låsläge och appval ändras bara efter en sexsiffrig **föräldrakod**. Föräldern visar den i GameRun under barnets sida → **Låsta och tillåtna appar** → **Visa kod**. Koden gäller i 5 minuter och kan användas en gång. Efter en giltig kod är ändringar öppna i 10 minuter eller tills panelen stängs. Fem fel spärrar barnkontot i 15 minuter. Spärren finns i GameRun; Apples appväljare i sig kräver ingen kod.
 - Ingen påhittad blockering visas på webben. Koden är tillagd, men Swift-kompilering, rättigheter och faktisk blockering är **inte verifierade på iPhone** här.
@@ -41,6 +43,15 @@ Välj **App**-target → **Signing & Capabilities**:
 4. Kontrollera `NSMotionUsageDescription` och `NSHealthShareUsageDescription` under Info. Behåll eventuella ytterligare HealthKit-nycklar som er HealthKit-plugin kräver.
 
 En ren Capability-inställning räcker inte: signeringsprofilen måste innehålla samma rättigheter.
+
+**Om appen visar "App Groups saknas i signeringen":** den installerade appen saknar App Group-rättigheten. Gör så här:
+1. **App**-target → **Signing & Capabilities**: finns **App Groups** med en bock vid `group.com.axel.gamerun`? Lägg annars till den med **+ Capability**.
+2. Är gruppen röd eller går inte att registrera, ägs namnet av ett annat Apple-team. Välj ett eget namn, till exempel `group.` + er Bundle Identifier, och ändra samma namn i `ScreenTimeState.swift` (`group`) och på **GameRunMonitor**-targeten.
+3. Använd **Automatically manage signing** så att profilen uppdateras. Annars: skapa om provisioning-profilen på developer.apple.com med App Groups och Family Controls.
+4. Kontrollera att `App.entitlements` innehåller `com.apple.security.application-groups` med gruppen, och att **Code Signing Entitlements** i Build Settings pekar på den filen.
+5. **Product → Clean Build Folder**, ta bort appen från telefonen och kör igen.
+
+Nästa kontroll är monitor-tillägget. Saknas det visar appen "Skärmtidstillägget är inte installerat" (steg 3).
 
 ## 3. Lägg till tillägget som återblockerar
 
@@ -77,6 +88,12 @@ Pluginen vägrar aktivering om App Group eller det inbäddade monitor-tillägget
 7. Välj **1 minut**, tryck **Lås upp 1 min** och kontrollera att de spärrade apparna går att öppna. Saldo ska minska med exakt en minut.
 8. Stäng GameRun helt medan en annan app är öppen. När minutens tidsfönster gått ut ska allt utom alltid tillåtna appar spärras igen **utan att GameRun öppnas**.
 9. Öppna GameRun igen: tidsfönstret är avslutat och saldot förblir korrekt.
+10. **Skärmfri tid**: ställ in skärmfri tid som börjar om 20 minuter och slutar 15 minuter senare (minsta längd är 15 minuter). Öppna GameRun på barnets telefon så att schemat synkas.
+    - Försök låsa upp 30 minuter: det ska inte gå, högsta valet är minuterna fram till starten.
+    - Stäng GameRun och vänta. Vid starttiden ska allt utom alltid tillåtna appar spärras, och Hem ska visa "Skärmfri tid" med sluttiden.
+    - Efter sluttiden ska telefonen vara vanligt låst och gå att låsa upp igen.
+    - Testa ett schema över midnatt (till exempel 23:30–00:30) och efter omstart av telefonen.
+11. **Appgränser**: skapa en gräns på 1 minut. Välj en testapp för gränsen på barnets telefon (Ändra appar och lås → Appgränser). Lås upp 15 minuter och använd testappen i drygt en minut. Den ska spärras trots upplåsningen, medan andra appar fungerar. Nästa dag ska den gå att använda igen.
 
 **Viktigt om korta tider:** Apple kräver ett monitorintervall på minst 15 minuter. Koden börjar själva monitorintervallet 16 minuter bakåt men behåller tidsfönstrets riktiga sluttid. Det är en implementeringslösning som måste verifieras på era iOS-versioner, särskilt nära midnatt; om iOS avvisar schemat lyfts inte blockeringen. Godkänd schemaläggning är inte en garanti för sekundexakt återblockering. Om 1-minutstestet inte fungerar, gå inte vidare till användare; samla Xcode-loggar och jämför ett 15-minuterstest.
 

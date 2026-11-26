@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from "react";
-import { ChevronRight, KeyRound, Loader2, LockKeyhole, ShieldCheck, Smartphone } from "lucide-react";
+import { ChevronRight, KeyRound, Loader2, LockKeyhole, ShieldCheck, Smartphone, Timer } from "lucide-react";
+import type { LimitInfo } from "@/hooks/useDeviceRules";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,7 +26,7 @@ const clock = (seconds: number) => `${Math.floor(seconds / 60)}:${String(seconds
  * code from a linked parent; after a valid code the sheet stays open for changes for 10 minutes
  * or until it closes. Apple's app picker opens on top of the sheet.
  */
-export function LockSettingsDrawer({ status, busy, error, open, onOpenChange, onSetMode, onSelectAllowed, onSelectBlocked }: {
+export function LockSettingsDrawer({ status, busy, error, open, onOpenChange, onSetMode, onSelectAllowed, onSelectBlocked, limits, onSelectLimit }: {
   status: ScreenTimeStatus;
   busy: boolean;
   error: string;
@@ -34,6 +35,9 @@ export function LockSettingsDrawer({ status, busy, error, open, onOpenChange, on
   onSetMode: (mode: LockMode) => void;
   onSelectAllowed: () => void;
   onSelectBlocked: () => void;
+  /** The parents' app limits; the apps for each are chosen here on the iPhone. */
+  limits: LimitInfo[];
+  onSelectLimit: (limit: LimitInfo) => void;
 }) {
   const [approvedUntil, setApprovedUntil] = useState<number | null>(null);
   const [now, setNow] = useState(Date.now());
@@ -124,6 +128,29 @@ export function LockSettingsDrawer({ status, busy, error, open, onOpenChange, on
                   />
                 </li>
               </ul>
+
+              {limits.length > 0 && (
+                <section aria-labelledby="limits-heading" className="space-y-2.5">
+                  <h3 id="limits-heading" className="font-semibold">Appgränser</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Din förälder har satt gränserna. Välj vilka appar varje gräns gäller. De spärras när tiden är slut för dagen, även när telefonen är upplåst.
+                  </p>
+                  <ul className="divide-y divide-border overflow-hidden rounded-2xl border border-border">
+                    {limits.map((limit) => (
+                      <li key={limit.id}>
+                        <Choice
+                          icon={<Timer className="h-5 w-5 text-primary" />}
+                          title={limit.name}
+                          text={`${limit.minutes} min per dag${limit.reached ? " · slut för idag" : ""}`}
+                          value={limit.selectionCount ? valda(limit.selectionCount) : "Välj appar"}
+                          disabled={busy}
+                          onClick={() => onSelectLimit(limit)}
+                        />
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
 
               {mode === "all" && status.needsAllowedApps && (
                 <p role="status" className="rounded-2xl bg-muted/60 p-4 text-sm text-muted-foreground">

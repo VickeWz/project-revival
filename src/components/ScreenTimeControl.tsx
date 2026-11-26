@@ -5,7 +5,9 @@ import { LockSettingsDrawer } from '@/components/LockSettingsDrawer';
 import { MinutePicker } from '@/components/MinutePicker';
 import { LockKeyhole, ShieldCheck, Unlock, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useDeviceRules } from '@/hooks/useDeviceRules';
 import { supabase } from '@/integrations/supabase/client';
+import { formatClock, minutesUntil } from '@/lib/device-rules';
 import { lockModeOf, remainingSeconds } from '@/lib/screen-time';
 import { activateTime, currentSession, screenTimeAvailable, screenTimePlugin, type ScreenTimeStatus } from '@/services/screenTime';
 
@@ -26,7 +28,11 @@ export function ScreenTimeControl() {
   const available = screenTimeAvailable();
   const pending = useRef<{ id: string; minutes: number } | null>(null);
   const active = status ? remainingSeconds(status.expiresAt, now) : 0;
-  const maxMinutes = Math.min(MAX_ACTIVATION, balance ?? 0);
+  // An unlock window may not reach into the next downtime (the server refuses it too).
+  const nextDowntime = status?.nextDowntimeAt ?? 0;
+  const untilDowntime = nextDowntime > 0 ? minutesUntil(nextDowntime, now) : Infinity;
+  const maxMinutes = Math.min(MAX_ACTIVATION, balance ?? 0, untilDowntime);
+  const { limits, syncError } = useDeviceRules(profile?.id, status, setStatus);
   const chosen = pending.current ? pending.current.minutes : Math.max(1, Math.min(minutes, maxMinutes));
 
   useEffect(() => {
@@ -120,6 +126,15 @@ export function ScreenTimeControl() {
         <Button variant="outline" className="h-12 w-full" disabled={busy} onClick={() => setSettingsOpen(true)}>
           <LockKeyhole className="h-4 w-4" />Välj appar med förälder
         </Button>
+      ) : status.downtimeActive ? (
+        <div role="status" className="rounded-2xl bg-muted/60 p-4 text-center">
+          <p className="font-semibold">Skärmfri tid</p>
+          <p className="text-sm text-muted-foreground">
+            {status.downtimeEndsAt
+              ? `Telefonen är låst till ${formatClock(status.downtimeEndsAt)}. Du kan låsa upp igen efter det.`
+              : 'Telefonen är låst just nu. Du kan låsa upp igen efter skärmfri tid.'}
+          </p>
+        </div>
       ) : active > 0 ? (
         <div role="status" className="rounded-2xl bg-primary/10 p-4 text-center">
           <p className="text-sm text-muted-foreground">Apparna är upplåsta</p>
@@ -130,7 +145,9 @@ export function ScreenTimeControl() {
         </div>
       ) : maxMinutes < 1 && !pending.current ? (
         <p className="rounded-2xl bg-muted/60 p-4 text-sm text-muted-foreground">
-          Du har ingen tid att låsa upp just nu. Rör på dig eller lös uppgifter för att tjäna mer.
+          {(balance ?? 0) >= 1 && untilDowntime < 1
+            ? `Skärmfri tid börjar ${formatClock(nextDowntime)}. Du kan låsa upp igen efter den.`
+            : 'Du har ingen tid att låsa upp just nu. Rör på dig eller lös uppgifter för att tjäna mer.'}
         </p>
       ) : (
         <div className="space-y-4">
@@ -150,9 +167,12 @@ export function ScreenTimeControl() {
             {mode === 'all'
               ? `Telefonen är låst utanför tiden, utom ${allowed} alltid ${allowed === 1 ? 'tillåten' : 'tillåtna'}.`
               : `${status.selectionCount} valda appar och kategorier är spärrade utanför tiden.`}
+            {untilDowntime <= MAX_ACTIVATION && ` Skärmfri tid börjar ${formatClock(nextDowntime)}.`}
           </p>
         </div>
       )}
+
+      {syncError && available && status?.authorized && <p className="text-xs text-destructive">{syncError}</p>}
 
       <div className="space-y-1 border-t border-border pt-3">
         <AskParentTime />
@@ -166,6 +186,8 @@ export function ScreenTimeControl() {
             onSetMode={(next) => void perform(async () => setStatus(await screenTimePlugin.setLockMode({ mode: next })))}
             onSelectAllowed={pickAllowed}
             onSelectBlocked={pickBlocked}
+            limits={limits}
+            onSelectLimit={(limit) => void perform(async () => setStatus(await screenTimePlugin.selectLimitApps({ limitId: limit.id, name: limit.name })))}
           />
         )}
       </div>

@@ -14,32 +14,54 @@ public class GameRunScreenTimePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "selectApps", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "selectAllowedApps", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "setLockMode", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setDowntime", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setLimits", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "selectLimitApps", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "activate", returnType: CAPPluginReturnPromise)
     ]
     private var pickerOpen = false
     private func ready(_ call: CAPPluginCall) -> Bool {
         guard FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: ScreenTimeState.group) != nil else {
-            call.reject("App Groups saknas i signeringen."); return false
+            call.reject("App Groups saknas i signeringen (\(ScreenTimeState.group)). Se iPhone-guiden, steg 2."); return false
         }
         guard Bundle.main.object(forInfoDictionaryKey: "GameRunMonitorConfigured") as? Bool == true,
               let plugins = Bundle.main.builtInPlugInsURL,
               let bundles = try? FileManager.default.contentsOfDirectory(at: plugins, includingPropertiesForKeys: nil),
               bundles.contains(where: { Bundle(url: $0)?.object(forInfoDictionaryKey: "GameRunMonitor") as? Bool == true }) else {
-            call.reject("Skärmtidstillägget är inte installerat. Följ iPhone-guiden."); return false
+            call.reject("Skärmtidstillägget är inte installerat. Följ iPhone-guiden, steg 3."); return false
         }
         return true
     }
+    private func millis(_ date: Date?) -> Double { (date?.timeIntervalSince1970 ?? 0) * 1000 }
     private func payload() -> [String: Any] {
         let d = ScreenTimeState.defaults
         let deviceID = d?.string(forKey: "deviceID") ?? UUID().uuidString
         d?.set(deviceID, forKey: "deviceID")
         let a = AuthorizationCenter.shared.authorizationStatus
+        let reached = Set(ScreenTimeState.limitsReachedToday)
+        let limits: [[String: Any]] = ScreenTimeState.limits.map { limit in
+            ["id": limit.id, "minutes": limit.minutes,
+             "selectionCount": ScreenTimeState.selectionCount(for: limit.id), "reached": reached.contains(limit.id)]
+        }
         return ["authorized": a == .approved, "selectionCount": ScreenTimeState.count,
                 "lockMode": ScreenTimeState.lockMode.rawValue,
                 "allowedCount": ScreenTimeState.allowedCount, "blockedCount": ScreenTimeState.count,
                 "needsAllowedApps": ScreenTimeState.needsAllowedApps,
+                "downtimeActive": ScreenTimeState.inDowntime,
+                "downtimeEndsAt": millis(ScreenTimeState.downtimeEnd()),
+                "nextDowntimeAt": millis(ScreenTimeState.nextDowntimeStart()),
+                "limits": limits,
+                // Exactly what JS last sent, so it can skip unchanged rules (restarting limits resets usage).
+                "downtimeJson": d?.string(forKey: "downtimeJson") ?? "",
+                "limitsJson": d?.string(forKey: "limitsJson") ?? "",
                 "deviceId": deviceID, "expiresAt": ScreenTimeState.expiresAt * 1000,
                 "sessionId": ScreenTimeState.sessionID ?? "", "configured": true]
+    }
+    private func approved(_ call: CAPPluginCall) -> Bool {
+        guard AuthorizationCenter.shared.authorizationStatus == .approved else {
+            call.reject("Godkänn skärmtid med förälder först."); return false
+        }
+        return true
     }
     /// Lock settings may only change between unlock windows, never while apps are open.
     private func canChangeLock(_ call: CAPPluginCall) -> Bool {
@@ -52,7 +74,10 @@ public class GameRunScreenTimePlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func status(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
             guard self.ready(call) else { return }
-            if AuthorizationCenter.shared.authorizationStatus == .approved { ScreenTimeState.reconcile() }
+            if AuthorizationCenter.shared.authorizationStatus == .approved {
+                ScreenTimeState.reconcile()
+                ScreenTimeState.applyLimitShields()
+            }
             call.resolve(self.payload())
         }
     }
@@ -69,13 +94,34 @@ public class GameRunScreenTimePlugin: CAPPlugin, CAPBridgedPlugin {
             }
         }
     }
+
+    // MARK: - App choices and lock mode
+
     @objc func selectApps(_ call: CAPPluginCall) {
-        presentPicker(call, key: "selection", title: "Appar som spärras",
-                      note: "Används i läget Valda appar. Välj inte GameRun.")
+        presentPicker(call, title: "Appar som spärras", note: "Används i läget Valda appar. Välj inte GameRun.",
+                      initial: ScreenTimeState.selection) { selection in
+            ScreenTimeState.saveSelection(selection, forKey: "selection")
+            ScreenTimeState.reconcile()
+        }
     }
     @objc func selectAllowedApps(_ call: CAPPluginCall) {
-        presentPicker(call, key: "allowedSelection", title: "Alltid tillåtna",
-                      note: "Välj GameRun och de appar som alltid ska fungera, till exempel Telefon och Meddelanden. Välj enskilda appar, inte kategorier.")
+        presentPicker(call, title: "Alltid tillåtna",
+                      note: "Välj GameRun och de appar som alltid ska fungera, till exempel Telefon och Meddelanden. Välj enskilda appar, inte kategorier.",
+                      initial: ScreenTimeState.allowedSelection) { selection in
+            ScreenTimeState.saveSelection(selection, forKey: "allowedSelection")
+            ScreenTimeState.reconcile()
+        }
+    }
+    @objc func selectLimitApps(_ call: CAPPluginCall) {
+        guard let id = call.getString("limitId"), !id.isEmpty, id.count <= 64 else {
+            call.reject("Okänd appgräns."); return
+        }
+        let name = call.getString("name") ?? "Appgräns"
+        presentPicker(call, title: name, note: "Välj de appar och kategorier som gränsen ska gälla. Användningen räknas om från noll när valet sparas.",
+                      initial: ScreenTimeState.limitSelections[id] ?? FamilyActivitySelection()) { selection in
+            ScreenTimeState.saveLimitSelection(selection, for: id)
+            try? self.restartLimitMonitoring()
+        }
     }
     @objc func setLockMode(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
@@ -84,24 +130,21 @@ public class GameRunScreenTimePlugin: CAPPlugin, CAPBridgedPlugin {
                 call.reject("Okänt låsläge."); return
             }
             ScreenTimeState.defaults?.set(mode.rawValue, forKey: "lockMode")
-            ScreenTimeState.block()
+            ScreenTimeState.reconcile()
             call.resolve(self.payload())
         }
     }
-    private func presentPicker(_ call: CAPPluginCall, key: String, title: String, note: String) {
+    private func presentPicker(_ call: CAPPluginCall, title: String, note: String, initial: FamilyActivitySelection,
+                               save: @escaping (FamilyActivitySelection) -> Void) {
         DispatchQueue.main.async {
             guard self.ready(call), self.canChangeLock(call) else { return }
             guard let presenter = self.bridge?.viewController, !self.pickerOpen else {
                 call.reject("Appväljaren är redan öppen."); return
             }
             self.pickerOpen = true
-            let initial = key == "allowedSelection" ? ScreenTimeState.allowedSelection : ScreenTimeState.selection
             let view = GameRunAppPicker(initial: initial, title: title, note: note) { selection in
                 defer { self.pickerOpen = false }
-                if let selection = selection, let data = try? JSONEncoder().encode(selection) {
-                    ScreenTimeState.defaults?.set(data, forKey: key)
-                    ScreenTimeState.block()
-                }
+                if let selection = selection { save(selection) }
                 presenter.dismiss(animated: true) { call.resolve(self.payload()) }
             }
             let controller = UIHostingController(rootView: view)
@@ -109,6 +152,97 @@ public class GameRunScreenTimePlugin: CAPPlugin, CAPBridgedPlugin {
             presenter.present(controller, animated: true)
         }
     }
+
+    // MARK: - Skärmfri tid (downtime)
+
+    /// Replaces all downtime rules. options.json = [{ weekdays: [1–7], start: minutes, end: minutes }].
+    @objc func setDowntime(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            guard self.ready(call), self.approved(call) else { return }
+            guard let json = call.getString("json"), let data = json.data(using: .utf8),
+                  let rules = try? JSONDecoder().decode([ScreenTimeState.Downtime].self, from: data),
+                  rules.count <= 8, rules.allSatisfy({ $0.isValid }) else {
+                call.reject("Ogiltigt schema för skärmfri tid."); return
+            }
+            ScreenTimeState.saveDowntimes(rules)
+            ScreenTimeState.defaults?.set(json, forKey: "downtimeJson")
+            let center = DeviceActivityCenter()
+            center.stopMonitoring(center.activities.filter { ScreenTimeState.isDowntimeActivity($0) })
+            let failed = rules.enumerated().filter { !self.monitorDowntime($0.element, index: $0.offset, center: center) }.count
+            // Downtime is also enforced from the saved rules whenever GameRun or the monitor runs.
+            ScreenTimeState.reconcile()
+            if failed > 0 { call.reject("iOS kunde inte schemalägga skärmfri tid. Den gäller när GameRun öppnas."); return }
+            call.resolve(self.payload())
+        }
+    }
+    private func monitorDowntime(_ rule: ScreenTimeState.Downtime, index: Int, center: DeviceActivityCenter) -> Bool {
+        func at(_ minutes: Int) -> DateComponents { DateComponents(hour: minutes / 60, minute: minutes % 60) }
+        do {
+            try center.startMonitoring(DeviceActivityName("gamerun.downtime.\(index)"),
+                                       during: DeviceActivitySchedule(intervalStart: at(rule.start), intervalEnd: at(rule.end), repeats: true))
+            return true
+        } catch {
+            // If iOS rejects a daily interval across midnight, split it into evening and morning.
+            guard rule.end < rule.start else { return false }
+            var scheduled = false
+            if 23 * 60 + 59 - rule.start >= 15,
+               (try? center.startMonitoring(DeviceActivityName("gamerun.downtime.\(index).evening"),
+                                            during: DeviceActivitySchedule(intervalStart: at(rule.start), intervalEnd: at(23 * 60 + 59), repeats: true))) != nil {
+                scheduled = true
+            }
+            if rule.end >= 15,
+               (try? center.startMonitoring(DeviceActivityName("gamerun.downtime.\(index).morning"),
+                                            during: DeviceActivitySchedule(intervalStart: at(0), intervalEnd: at(rule.end), repeats: true))) != nil {
+                scheduled = true
+            }
+            return scheduled
+        }
+    }
+
+    // MARK: - Appgränser (daily limits)
+
+    /// Replaces all limits. options.json = [{ id, minutes }]. Apps for each limit are chosen with selectLimitApps.
+    /// Restarting the daily monitor resets today's usage, so only call this when the limits changed.
+    @objc func setLimits(_ call: CAPPluginCall) {
+        DispatchQueue.main.async {
+            guard self.ready(call), self.approved(call) else { return }
+            guard let json = call.getString("json"), let data = json.data(using: .utf8),
+                  let limits = try? JSONDecoder().decode([ScreenTimeState.AppLimit].self, from: data),
+                  limits.count <= 20, limits.allSatisfy({ $0.isValid }) else {
+                call.reject("Ogiltiga appgränser."); return
+            }
+            ScreenTimeState.saveLimits(limits)
+            ScreenTimeState.defaults?.set(json, forKey: "limitsJson")
+            do {
+                try self.restartLimitMonitoring()
+                call.resolve(self.payload())
+            } catch {
+                call.reject("iOS kunde inte schemalägga appgränserna.")
+            }
+        }
+    }
+    private func restartLimitMonitoring() throws {
+        let center = DeviceActivityCenter()
+        center.stopMonitoring([ScreenTimeState.limitsActivity])
+        ScreenTimeState.applyLimitShields()
+        let selections = ScreenTimeState.limitSelections
+        var events: [DeviceActivityEvent.Name: DeviceActivityEvent] = [:]
+        for limit in ScreenTimeState.limits {
+            guard let s = selections[limit.id],
+                  !(s.applicationTokens.isEmpty && s.categoryTokens.isEmpty && s.webDomainTokens.isEmpty) else { continue }
+            events[DeviceActivityEvent.Name("limit.\(limit.id)")] = DeviceActivityEvent(
+                applications: s.applicationTokens, categories: s.categoryTokens, webDomains: s.webDomainTokens,
+                threshold: DateComponents(hour: limit.minutes / 60, minute: limit.minutes % 60))
+        }
+        guard !events.isEmpty else { return }
+        try center.startMonitoring(ScreenTimeState.limitsActivity,
+                                   during: DeviceActivitySchedule(intervalStart: DateComponents(hour: 0, minute: 0),
+                                                                  intervalEnd: DateComponents(hour: 23, minute: 59), repeats: true),
+                                   events: events)
+    }
+
+    // MARK: - Unlock with earned time
+
     @objc func activate(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
             guard self.ready(call) else { return }
@@ -121,6 +255,12 @@ public class GameRunScreenTimePlugin: CAPPlugin, CAPBridgedPlugin {
             let end = Date(timeIntervalSince1970: ms / 1000)
             guard end > now, end.timeIntervalSince(now) <= 180 * 60 + 5 else {
                 ScreenTimeState.reconcile(); call.reject("Tidsfönstret har löpt ut."); return
+            }
+            guard !ScreenTimeState.inDowntime else {
+                ScreenTimeState.reconcile(); call.reject("Skärmfri tid pågår."); return
+            }
+            if let next = ScreenTimeState.nextDowntimeStart(after: now), next < end.addingTimeInterval(-5) {
+                call.reject("Upplåsningen skulle gå in i skärmfri tid."); return
             }
             let activity = DeviceActivityName("gamerun.\(id)")
             let center = DeviceActivityCenter()
@@ -143,7 +283,10 @@ public class GameRunScreenTimePlugin: CAPPlugin, CAPBridgedPlugin {
                 try center.startMonitoring(activity, during: schedule)
                 ScreenTimeState.defaults?.set(id, forKey: "sessionID")
                 ScreenTimeState.defaults?.set(end.timeIntervalSince1970, forKey: "expiresAt")
-                for old in center.activities where old != activity { center.stopMonitoring([old]) }
+                // Stop only older unlock windows; downtime and limits keep running.
+                for old in center.activities where old != activity && ScreenTimeState.isSessionActivity(old) {
+                    center.stopMonitoring([old])
+                }
                 ScreenTimeState.unblock()
                 call.resolve(self.payload())
             } catch {
