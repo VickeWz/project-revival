@@ -112,7 +112,20 @@ public class GameRunScreenTimePlugin: CAPPlugin, CAPBridgedPlugin {
                     try await AuthorizationCenter.shared.requestAuthorization(for: .child)
                     ScreenTimeState.reconcile()
                     call.resolve(self.payload())
-                } catch { call.reject("Förälderns godkännande för skärmtid kunde inte slutföras.") }
+                } catch {
+                    let reason: String
+                    switch error as? FamilyControlsError {
+                    case .invalidAccountType?: reason = "Telefonen måste vara inloggad med ett barnkonto i Apples Familjedelning."
+                    case .authorizationCanceled?: reason = "Godkännandet avbröts."
+                    case .restricted?: reason = "Skärmtid är begränsad på den här telefonen."
+                    case .unavailable?: reason = "Skärmtid är inte tillgängligt (är Skärmtid påslaget i Inställningar?)."
+                    case .networkError?: reason = "Ingen kontakt med Apple. Kontrollera internet."
+                    case .authorizationConflict?: reason = "En annan app styr redan skärmtiden."
+                    case .invalidArgument?: reason = "Felaktig begäran."
+                    default: reason = error.localizedDescription
+                    }
+                    call.reject("Förälderns godkännande för skärmtid kunde inte slutföras: \(reason)")
+                }
             }
         }
     }
