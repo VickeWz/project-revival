@@ -114,7 +114,7 @@ export function ScreenTimeControl() {
         </div>
       ) : maxMinutes < 1 && !pending.current ? (
         <p className="rounded-2xl bg-muted/60 p-4 text-sm text-muted-foreground">
-          Du har ingen tid att låsa upp just nu. Starta ett pass för att tjäna mer.
+          Du har ingen tid att låsa upp just nu. Rör på dig eller lös uppgifter för att tjäna mer.
         </p>
       ) : (
         <div className="space-y-4">

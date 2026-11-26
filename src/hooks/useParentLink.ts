@@ -8,10 +8,13 @@ export interface ParentInfo {
   avatar: string | null;
 }
 
-/** The parent linked to the signed-in child, kept current when a parent links the account. */
+/**
+ * The parents linked to the signed-in child (a child can have more than one), oldest link first,
+ * kept current when a parent links the account. `parent` is the first one and receives requests for time.
+ */
 export function useParentLink() {
   const { profile } = useAuth();
-  const [parent, setParent] = useState<ParentInfo | null>(null);
+  const [parents, setParents] = useState<ParentInfo[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -21,27 +24,28 @@ export function useParentLink() {
 
     const load = async () => {
       try {
-        const { data: link, error } = await supabase
+        const { data: links, error } = await supabase
           .from("parent_child_links")
           .select("parent_id")
           .eq("child_id", childId)
-          .maybeSingle();
+          .order("created_at", { ascending: true });
         if (error) throw error;
-        if (!link) {
-          if (!cancelled) setParent(null);
+        const ids = (links ?? []).map((link) => link.parent_id);
+        if (ids.length === 0) {
+          if (!cancelled) setParents([]);
           return;
         }
-        const { data: parentProfile, error: profileError } = await supabase
+        const { data: profiles, error: profileError } = await supabase
           .from("profiles")
           .select("id, display_name, avatar_url")
-          .eq("id", link.parent_id)
-          .maybeSingle();
+          .in("id", ids);
         if (profileError) throw profileError;
         if (!cancelled) {
-          setParent(
-            parentProfile
-              ? { id: parentProfile.id, name: parentProfile.display_name, avatar: parentProfile.avatar_url }
-              : null,
+          setParents(
+            ids.flatMap((id) => {
+              const found = profiles?.find((row) => row.id === id);
+              return found ? [{ id: found.id, name: found.display_name, avatar: found.avatar_url }] : [];
+            }),
           );
         }
       } catch (error) {
@@ -69,5 +73,5 @@ export function useParentLink() {
     };
   }, [profile?.id]);
 
-  return { parent, loading };
+  return { parent: parents[0] ?? null, parents, loading };
 }

@@ -13,7 +13,7 @@ const Profile = () => {
   const { profile } = useAuth();
   const navigate = useNavigate();
   const { dailyStepGoal } = useActivityGoal();
-  const { parent, loading } = useParentLink();
+  const { parents, loading } = useParentLink();
   const name = profile?.display_name || "Användare";
   const [pairingOpen, setPairingOpen] = useState(false);
 
@@ -39,21 +39,26 @@ const Profile = () => {
           </Row>
         </li>
         <li>
-          <Row icon={<Users className="h-5 w-5 text-primary" />} label="Förälder">
+          <Row icon={<Users className="h-5 w-5 text-primary" />} label={parents.length > 1 ? "Föräldrar" : "Förälder"}>
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-label="Laddar" />
             ) : (
-              <span className="text-muted-foreground">{parent?.name ?? "Inte kopplad"}</span>
+              <span className="truncate text-muted-foreground">
+                {parents.length ? parents.map((p) => p.name).join(", ") : "Inte kopplad"}
+              </span>
             )}
           </Row>
         </li>
-        <li>
-          <Button variant="ghost" className="h-14 w-full justify-start rounded-none px-4" onClick={() => setPairingOpen(true)}>
-            <Users className="h-5 w-5 text-primary" />
-            <span className="flex-1 text-left">Koppla förälder</span>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
-          </Button>
-        </li>
+        {!loading && (
+          <li>
+            {/* Shown also when a parent is linked: a child can be linked to more than one parent. */}
+            <Button variant="ghost" className="h-14 w-full justify-start rounded-none px-4" onClick={() => setPairingOpen(true)}>
+              <Users className="h-5 w-5 text-primary" />
+              <span className="flex-1 text-left">{parents.length ? "Koppla en förälder till" : "Koppla förälder"}</span>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </Button>
+          </li>
+        )}
         <li>
           <Row icon={<Settings className="h-5 w-5 text-primary" />} label="Inställningar" onClick={() => navigate("/settings")} />
         </li>
