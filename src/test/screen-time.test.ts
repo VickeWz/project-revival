@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { activateEarnedTime, remainingSeconds } from '@/lib/screen-time';
+import { activateEarnedTime, lockModeOf, lockReady, remainingSeconds } from '@/lib/screen-time';
 
 const id = '11111111-1111-4111-8111-111111111111';
 const device = '22222222-2222-4222-8222-222222222222';
@@ -57,6 +57,24 @@ describe('earned time activation', () => {
     expect(remainingSeconds(5000, 5000)).toBe(0);
     expect(remainingSeconds(5000, 6000)).toBe(0);
     expect(remainingSeconds(5000, 2000)).toBe(3);
+  });
+  it('in whole-phone mode redeems only after always-allowed apps are chosen', async () => {
+    const { bridge, redeem } = setup();
+    const locked = { authorized: true, selectionCount: 0, deviceId: device, lockMode: 'all' as const };
+    bridge.status.mockResolvedValue({ ...locked, allowedCount: 0, needsAllowedApps: true });
+    await expect(activateEarnedTime(bridge, redeem, id, 5)).rejects.toThrow('Välj alltid tillåtna appar med förälder först.');
+    bridge.status.mockResolvedValue({ ...locked, allowedCount: 1, needsAllowedApps: true }); // only a website
+    await expect(activateEarnedTime(bridge, redeem, id, 5)).rejects.toThrow();
+    expect(redeem).not.toHaveBeenCalled();
+    bridge.status.mockResolvedValue({ ...locked, allowedCount: 2, needsAllowedApps: false });
+    await activateEarnedTime(bridge, redeem, id, 5);
+    expect(redeem).toHaveBeenCalledWith(id, device, 5);
+  });
+  it('treats iPhone builds without lock modes as the selected-apps mode', () => {
+    expect(lockModeOf({})).toBe('selected');
+    expect(lockReady({ authorized: true, selectionCount: 3 })).toBe(true);
+    expect(lockReady({ authorized: true, selectionCount: 0, lockMode: 'selected', allowedCount: 4, needsAllowedApps: false })).toBe(false);
+    expect(lockReady({ authorized: false, selectionCount: 0, lockMode: 'all', allowedCount: 4, needsAllowedApps: false })).toBe(false);
   });
   it('rejects zero and fractional minute activations before charging', async () => {
     const { bridge, redeem } = setup();

@@ -1,15 +1,20 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { supabase } from '@/integrations/supabase/client';
-import { activateEarnedTime, screenTimeSession, type ScreenTimeSession } from '@/lib/screen-time';
+import { activateEarnedTime, screenTimeSession, type LockMode, type LockStatus, type ScreenTimeSession } from '@/lib/screen-time';
 
-export interface ScreenTimeStatus {
-  authorized: boolean; selectionCount: number; deviceId: string;
-  expiresAt: number; sessionId: string; configured: boolean;
+export interface ScreenTimeStatus extends LockStatus {
+  deviceId: string; expiresAt: number; sessionId: string; configured: boolean;
+  /** Same as selectionCount; present on builds with lock modes. */
+  blockedCount?: number;
 }
 interface ScreenTimePlugin {
   status(): Promise<ScreenTimeStatus>;
   authorize(): Promise<ScreenTimeStatus>;
+  /** Apps, categories and websites locked in the "selected" mode. */
   selectApps(): Promise<ScreenTimeStatus>;
+  /** Apps and websites that stay open in the "all" mode. */
+  selectAllowedApps(): Promise<ScreenTimeStatus>;
+  setLockMode(options: { mode: LockMode }): Promise<ScreenTimeStatus>;
   activate(options: { sessionId: string; expiresAt: number }): Promise<ScreenTimeStatus>;
 }
 export const screenTimePlugin = registerPlugin<ScreenTimePlugin>('GameRunScreenTime');

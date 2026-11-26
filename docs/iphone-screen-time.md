@@ -4,8 +4,12 @@
 
 - Hälsa ger passets slutliga steg; varje komplett 200 steg sparar 1 minut.
 - Barnet väljer 1–180 minuter från sitt sparade saldo. Tiden dras en gång och ett fast tidsfönster börjar direkt, även om barnet inte använder apparna.
-- Valda appar, kategorier och webbplatser blockeras med Apples Managed Settings. De öppnas under tidsfönstret och blockeras igen av ett Device Activity Monitor-tillägg, även när GameRun är stängd.
-- Det är **inte** ett lås av hela telefonen. Behåll GameRun, Telefon och nödvändiga appar tillgängliga; välj inte GameRun eller en kategori som omfattar GameRun.
+- Två låslägen, valda under **Ändra appar och lås** på Hem:
+  - **Hela telefonen** (standard): allt spärras med Apples Managed Settings (`.all(except:)`) utom **alltid tillåtna** appar och webbplatser. GameRun måste vara bland dem, annars kan barnet inte tjäna tid. Kategorier kan inte vara undantag, bara enskilda appar och webbplatser. Låset slås inte på förrän minst en app är vald som tillåten; tills dess gäller läget Valda appar.
+  - **Valda appar**: bara de valda apparna, kategorierna och webbplatserna spärras. Välj inte GameRun eller en kategori som omfattar GameRun.
+- Spärrarna öppnas under tidsfönstret och spärras igen av ett Device Activity Monitor-tillägg, även när GameRun är stängd.
+- Hemskärmen, nödsamtal och vissa systemfunktioner går aldrig att spärra. Vilka inbyggda appar som spärras under Hela telefonen måste testas.
+- Appvalen kan ändras på barnets telefon utan kod än så länge. Föräldrakod för ändringar är nästa steg.
 - Ingen påhittad blockering visas på webben. Koden är tillagd, men Swift-kompilering, rättigheter och faktisk blockering är **inte verifierade på iPhone** här.
 - De befintliga skärmarna är fortfarande Capacitor-skärmar; skärmtidsdelen är Swift. Detta gör inte hela gränssnittet till en ren SwiftUI-app.
 
@@ -62,12 +66,15 @@ Pluginen vägrar aktivering om App Group eller det inbäddade monitor-tillägget
 
 1. Logga in som barn i GameRun. Startsidan visar **Min skärmtid**.
 2. Tryck **Godkänn med förälder**, slutför Apples familjegodkännande.
-3. Tryck **Välj appar med förälder** och välj **en oviktig testapp**, inte GameRun. Spara.
-4. Öppna testappen. Den ska nu visa Apples blockeringsskärm.
+3. Tryck **Välj alltid tillåtna appar med förälder** och välj **GameRun** och Telefon. Spara.
+4. Öppna några andra appar och Safari. De ska visa Apples blockeringsskärm. GameRun och Telefon ska gå att öppna.
+   - Kontrollera särskilt om GameRun spärras om den **inte** är vald som tillåten. Spärras den inte kan varningen om GameRun i appen tas bort.
+   - Anteckna vilka inbyggda appar (Meddelanden, Kamera, Inställningar, Kartor) som spärras.
+   - Testa även läget **Valda appar** under **Ändra appar och lås**: välj en oviktig testapp under Appar som spärras. Bara den ska vara spärrad. Byt tillbaka till Hela telefonen.
 5. Tillåt rörelse och Hälsa. Starta ett pass, gå minst 200 steg och avsluta passet. Vänta vid behov tills Hälsa hunnit uppdateras innan du avslutar.
 6. Kontrollera att sparat saldo ökar med `heltal(steg / 200)` minuter. Steg som redan fanns före passet ska inte belönas igen.
-7. Välj **1 minut**, tryck **Aktivera tid** och kontrollera att testappen går att öppna. Saldo ska minska med exakt en minut.
-8. Stäng GameRun helt medan testappen är öppen. När minutens tidsfönster gått ut ska testappen återblockeras **utan att GameRun öppnas**.
+7. Välj **1 minut**, tryck **Lås upp 1 min** och kontrollera att de spärrade apparna går att öppna. Saldo ska minska med exakt en minut.
+8. Stäng GameRun helt medan en annan app är öppen. När minutens tidsfönster gått ut ska allt utom alltid tillåtna appar spärras igen **utan att GameRun öppnas**.
 9. Öppna GameRun igen: tidsfönstret är avslutat och saldot förblir korrekt.
 
 **Viktigt om korta tider:** Apple kräver ett monitorintervall på minst 15 minuter. Koden börjar själva monitorintervallet 16 minuter bakåt men behåller tidsfönstrets riktiga sluttid. Det är en implementeringslösning som måste verifieras på era iOS-versioner, särskilt nära midnatt; om iOS avvisar schemat lyfts inte blockeringen. Godkänd schemaläggning är inte en garanti för sekundexakt återblockering. Om 1-minutstestet inte fungerar, gå inte vidare till användare; samla Xcode-loggar och jämför ett 15-minuterstest.

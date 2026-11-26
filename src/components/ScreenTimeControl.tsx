@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { AskParentTime } from '@/components/AskParentTime';
+import { LockSettingsDrawer } from '@/components/LockSettingsDrawer';
 import { MinutePicker } from '@/components/MinutePicker';
 import { LockKeyhole, ShieldCheck, Unlock, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { remainingSeconds } from '@/lib/screen-time';
+import { lockModeOf, remainingSeconds } from '@/lib/screen-time';
 import { activateTime, currentSession, screenTimeAvailable, screenTimePlugin, type ScreenTimeStatus } from '@/services/screenTime';
 
 const MAX_ACTIVATION = 180;
@@ -78,6 +79,10 @@ export function ScreenTimeControl() {
     setNow(Date.now());
   });
   const canActivate = !!pending.current || (Number.isInteger(chosen) && chosen >= 1 && chosen <= maxMinutes);
+  const mode = status ? lockModeOf(status) : 'selected';
+  const allowed = status?.allowedCount ?? 0;
+  const pickAllowed = () => void perform(async () => setStatus(await screenTimePlugin.selectAllowedApps()));
+  const pickBlocked = () => void perform(async () => setStatus(await screenTimePlugin.selectApps()));
 
   return (
     <section aria-labelledby="balance-heading" className="space-y-5 rounded-3xl border border-primary/25 bg-card p-5">
@@ -100,8 +105,17 @@ export function ScreenTimeControl() {
           </Button>
           <p className="text-xs text-muted-foreground">Första gången behöver en förälder godkänna Skärmtid på den här telefonen.</p>
         </div>
-      ) : status.selectionCount === 0 ? (
-        <Button variant="outline" className="h-12 w-full" disabled={busy} onClick={() => void perform(async () => setStatus(await screenTimePlugin.selectApps()))}>
+      ) : mode === 'all' && status.needsAllowedApps ? (
+        <div className="space-y-2">
+          <Button variant="outline" className="h-12 w-full" disabled={busy} onClick={pickAllowed}>
+            <ShieldCheck className="h-4 w-4" />Välj alltid tillåtna appar med förälder
+          </Button>
+          <p className="text-xs text-muted-foreground">
+            Telefonen låses utom de appar ni väljer. GameRun måste vara med, annars kan du inte tjäna tid.
+          </p>
+        </div>
+      ) : mode === 'selected' && status.selectionCount === 0 ? (
+        <Button variant="outline" className="h-12 w-full" disabled={busy} onClick={pickBlocked}>
           <LockKeyhole className="h-4 w-4" />Välj appar med förälder
         </Button>
       ) : active > 0 ? (
@@ -130,12 +144,25 @@ export function ScreenTimeControl() {
             {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Unlock className="h-4 w-4" />}
             {pending.current ? 'Försök igen' : `Lås upp ${chosen} min`}
           </Button>
-          <p className="text-center text-xs text-muted-foreground">{status.selectionCount} valda appar och kategorier är spärrade utanför tiden.</p>
+          <p className="text-center text-xs text-muted-foreground">
+            {mode === 'all'
+              ? `Telefonen är låst utanför tiden, utom ${allowed} alltid ${allowed === 1 ? 'tillåten' : 'tillåtna'}.`
+              : `${status.selectionCount} valda appar och kategorier är spärrade utanför tiden.`}
+          </p>
         </div>
       )}
 
-      <div className="border-t border-border pt-3">
+      <div className="space-y-1 border-t border-border pt-3">
         <AskParentTime />
+        {available && status?.authorized && active === 0 && status.lockMode && (
+          <LockSettingsDrawer
+            status={status}
+            busy={busy}
+            onSetMode={(next) => void perform(async () => setStatus(await screenTimePlugin.setLockMode({ mode: next })))}
+            onSelectAllowed={pickAllowed}
+            onSelectBlocked={pickBlocked}
+          />
+        )}
       </div>
     </section>
   );

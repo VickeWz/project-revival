@@ -12,8 +12,31 @@ export function remainingSeconds(expiresAt: number, now = Date.now()) {
   return Math.max(0, Math.ceil((expiresAt - now) / 1000));
 }
 
+/** "all": the whole phone is locked except always-allowed apps. "selected": only chosen apps are locked. */
+export type LockMode = 'all' | 'selected';
+
+export interface LockStatus {
+  authorized: boolean;
+  /** Apps, categories and websites locked in the "selected" mode. */
+  selectionCount: number;
+  /** Missing on iPhone builds from before lock modes, which only know "selected". */
+  lockMode?: LockMode;
+  allowedCount?: number;
+  needsAllowedApps?: boolean;
+}
+
+export const lockModeOf = (status: Pick<LockStatus, 'lockMode'>): LockMode => status.lockMode ?? 'selected';
+
+/** Whether redeeming time can unlock anything on this iPhone. */
+export function lockReady(status: LockStatus): boolean {
+  if (!status.authorized) return false;
+  return lockModeOf(status) === 'all'
+    ? status.needsAllowedApps === false && (status.allowedCount ?? 0) > 0
+    : status.selectionCount > 0;
+}
+
 export interface ActivationBridge {
-  status(): Promise<{ authorized: boolean; selectionCount: number; deviceId: string }>;
+  status(): Promise<LockStatus & { deviceId: string }>;
   activate(options: { sessionId: string; expiresAt: number }): Promise<unknown>;
 }
 
@@ -27,7 +50,11 @@ export async function activateEarnedTime(
 ): Promise<ScreenTimeSession> {
   activationMinutes.parse(minutes);
   const status = await bridge.status();
-  if (!status.authorized || status.selectionCount < 1) throw new Error('Godkänn skärmtid och välj appar först.');
+  if (!lockReady(status)) {
+    throw new Error(status.authorized && lockModeOf(status) === 'all'
+      ? 'Välj alltid tillåtna appar med förälder först.'
+      : 'Godkänn skärmtid och välj appar först.');
+  }
   const session = screenTimeSession.parse(await redeem(id, status.deviceId, minutes));
   if (session.id !== id || session.device_id !== status.deviceId || session.minutes !== minutes) {
     throw new Error('Aktiveringen matchar inte den här iPhonen.');

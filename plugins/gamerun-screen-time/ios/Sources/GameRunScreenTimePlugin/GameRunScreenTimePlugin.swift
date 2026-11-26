@@ -12,6 +12,8 @@ public class GameRunScreenTimePlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "status", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "authorize", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "selectApps", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "selectAllowedApps", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "setLockMode", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "activate", returnType: CAPPluginReturnPromise)
     ]
     private var pickerOpen = false
@@ -33,8 +35,19 @@ public class GameRunScreenTimePlugin: CAPPlugin, CAPBridgedPlugin {
         d?.set(deviceID, forKey: "deviceID")
         let a = AuthorizationCenter.shared.authorizationStatus
         return ["authorized": a == .approved, "selectionCount": ScreenTimeState.count,
+                "lockMode": ScreenTimeState.lockMode.rawValue,
+                "allowedCount": ScreenTimeState.allowedCount, "blockedCount": ScreenTimeState.count,
+                "needsAllowedApps": ScreenTimeState.needsAllowedApps,
                 "deviceId": deviceID, "expiresAt": ScreenTimeState.expiresAt * 1000,
                 "sessionId": ScreenTimeState.sessionID ?? "", "configured": true]
+    }
+    /// Lock settings may only change between unlock windows, never while apps are open.
+    private func canChangeLock(_ call: CAPPluginCall) -> Bool {
+        guard AuthorizationCenter.shared.authorizationStatus == .approved,
+              ScreenTimeState.expiresAt <= Date().timeIntervalSince1970 else {
+            call.reject("Appval kräver godkännande och ett avslutat tidsfönster."); return false
+        }
+        return true
     }
     @objc func status(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
@@ -57,18 +70,36 @@ public class GameRunScreenTimePlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
     @objc func selectApps(_ call: CAPPluginCall) {
+        presentPicker(call, key: "selection", title: "Appar som spärras",
+                      note: "Används i läget Valda appar. Välj inte GameRun.")
+    }
+    @objc func selectAllowedApps(_ call: CAPPluginCall) {
+        presentPicker(call, key: "allowedSelection", title: "Alltid tillåtna",
+                      note: "Välj GameRun och de appar som alltid ska fungera, till exempel Telefon och Meddelanden. Välj enskilda appar, inte kategorier.")
+    }
+    @objc func setLockMode(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
-            guard self.ready(call) else { return }
-            guard AuthorizationCenter.shared.authorizationStatus == .approved,
-                  let presenter = self.bridge?.viewController, !self.pickerOpen,
-                  ScreenTimeState.expiresAt <= Date().timeIntervalSince1970 else {
-                call.reject("Appval kräver godkännande och ett avslutat tidsfönster."); return
+            guard self.ready(call), self.canChangeLock(call) else { return }
+            guard let raw = call.getString("mode"), let mode = ScreenTimeState.LockMode(rawValue: raw) else {
+                call.reject("Okänt låsläge."); return
+            }
+            ScreenTimeState.defaults?.set(mode.rawValue, forKey: "lockMode")
+            ScreenTimeState.block()
+            call.resolve(self.payload())
+        }
+    }
+    private func presentPicker(_ call: CAPPluginCall, key: String, title: String, note: String) {
+        DispatchQueue.main.async {
+            guard self.ready(call), self.canChangeLock(call) else { return }
+            guard let presenter = self.bridge?.viewController, !self.pickerOpen else {
+                call.reject("Appväljaren är redan öppen."); return
             }
             self.pickerOpen = true
-            let view = GameRunAppPicker(initial: ScreenTimeState.selection) { selection in
+            let initial = key == "allowedSelection" ? ScreenTimeState.allowedSelection : ScreenTimeState.selection
+            let view = GameRunAppPicker(initial: initial, title: title, note: note) { selection in
                 defer { self.pickerOpen = false }
                 if let selection = selection, let data = try? JSONEncoder().encode(selection) {
-                    ScreenTimeState.defaults?.set(data, forKey: "selection")
+                    ScreenTimeState.defaults?.set(data, forKey: key)
                     ScreenTimeState.block()
                 }
                 presenter.dismiss(animated: true) { call.resolve(self.payload()) }
@@ -81,7 +112,7 @@ public class GameRunScreenTimePlugin: CAPPlugin, CAPBridgedPlugin {
     @objc func activate(_ call: CAPPluginCall) {
         DispatchQueue.main.async {
             guard self.ready(call) else { return }
-            guard AuthorizationCenter.shared.authorizationStatus == .approved, ScreenTimeState.count > 0,
+            guard AuthorizationCenter.shared.authorizationStatus == .approved, ScreenTimeState.isConfigured,
                   let id = call.getString("sessionId"), UUID(uuidString: id) != nil,
                   let ms = call.getDouble("expiresAt"), ms.isFinite else {
                 call.reject("Godkänn skärmtid och välj appar först."); return
@@ -125,18 +156,29 @@ public class GameRunScreenTimePlugin: CAPPlugin, CAPBridgedPlugin {
 
 private struct GameRunAppPicker: View {
     @State var selection: FamilyActivitySelection
+    let title: String
+    let note: String
     let finish: (FamilyActivitySelection?) -> Void
-    init(initial: FamilyActivitySelection, finish: @escaping (FamilyActivitySelection?) -> Void) {
-        _selection = State(initialValue: initial); self.finish = finish
+    init(initial: FamilyActivitySelection, title: String, note: String, finish: @escaping (FamilyActivitySelection?) -> Void) {
+        _selection = State(initialValue: initial); self.title = title; self.note = note; self.finish = finish
     }
     var body: some View {
         NavigationStack {
-            FamilyActivityPicker(selection: $selection)
-                .navigationTitle("Appar och webbplatser")
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) { Button("Avbryt") { finish(nil) } }
-                    ToolbarItem(placement: .confirmationAction) { Button("Spara") { finish(selection) } }
-                }
+            VStack(spacing: 0) {
+                Text(note)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                FamilyActivityPicker(selection: $selection)
+            }
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) { Button("Avbryt") { finish(nil) } }
+                ToolbarItem(placement: .confirmationAction) { Button("Spara") { finish(selection) } }
+            }
         }
     }
 }
