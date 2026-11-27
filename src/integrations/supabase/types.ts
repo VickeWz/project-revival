@@ -241,6 +241,74 @@ export type Database = {
           },
         ]
       }
+      daily_screen_time_credits: {
+        Row: {
+          child_id: string
+          day: string
+          expired_minutes: number
+          granted_at: string
+          minutes: number
+        }
+        Insert: {
+          child_id: string
+          day: string
+          expired_minutes?: number
+          granted_at?: string
+          minutes: number
+        }
+        Update: {
+          child_id?: string
+          day?: string
+          expired_minutes?: number
+          granted_at?: string
+          minutes?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_screen_time_credits_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      daily_screen_time_settings: {
+        Row: {
+          child_id: string
+          minutes: number
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          child_id: string
+          minutes?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          child_id?: string
+          minutes?: number
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_screen_time_settings_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_screen_time_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       downtime_schedules: {
         Row: {
           child_id: string
@@ -635,6 +703,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      claim_daily_screen_time: { Args: { p_child_id: string }; Returns: Json }
       claim_daily_steps: {
         Args: { p_day: string; p_steps: number }
         Returns: Json
@@ -680,10 +749,15 @@ export type Database = {
         Args: { p_device_id: string; p_id: string; p_minutes: number }
         Returns: Json
       }
+      set_daily_screen_time: {
+        Args: { p_child_id: string; p_minutes: number }
+        Returns: Json
+      }
       set_daily_step_goal: {
         Args: { p_goal: number; p_import?: boolean; p_profile_id: string }
         Returns: number
       }
+      settle_daily_screen_time: { Args: { p_child: string }; Returns: Json }
     }
     Enums: {
       user_role: "parent" | "child"

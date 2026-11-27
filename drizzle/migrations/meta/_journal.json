@@ -85,6 +85,13 @@
       "when": 1795642900897,
       "tag": "0011_restore_task_and_daily_step_rewards",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1795808349204,
+      "tag": "0012_daily_base_screen_time",
+      "breakpoints": true
     }
   ]
 }
