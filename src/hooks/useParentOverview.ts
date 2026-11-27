@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { format, subDays } from "date-fns";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { claimDailyScreenTimeOnce } from "@/lib/daily-screen-time";
 import { untypedFrom } from "@/lib/untyped-db";
 
 export interface LinkedChild {
@@ -75,6 +76,8 @@ export function useParentOverview() {
         setChildren([]);
         return;
       }
+      // Give today's base time first (once per day), so the parent sees the same balance as the child.
+      await Promise.all(childIds.map((childId) => claimDailyScreenTimeOnce(childId)));
       const [{ data: profiles, error: profilesError }, { data: balances }, { data: today }, { data: unlocks, error: unlockError }, { data: dailyTotals, error: dailyError }, taskRows] = await Promise.all([
         supabase.from("profiles").select("id, display_name").in("id", childIds),
         supabase.from("screen_time_balance").select("user_id, minutes_remaining").in("user_id", childIds),

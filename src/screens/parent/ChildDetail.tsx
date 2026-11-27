@@ -24,6 +24,7 @@ import { AppScreen } from "@/components/layout/AppScreen";
 import { Initial } from "@/components/Initial";
 import { UnlockStatus } from "@/components/parent/UnlockStatus";
 import { DeviceChangeCode } from "@/components/parent/DeviceChangeCode";
+import { DailyScreenTimeCard } from "@/components/parent/DailyScreenTimeCard";
 import { formatPassDistance } from "@/lib/pass-metrics";
 import { MINUTES_PER_CORRECT, TASK_DAILY_LIMIT } from "@/lib/tasks/rewards";
 import { cn } from "@/lib/utils";
@@ -101,6 +102,8 @@ export function ChildDetail({ child, refreshKey, onBack, onGive, onRemove }: Chi
           Ge extra tid
         </Button>
       </section>
+
+      <DailyScreenTimeCard childId={child.id} childName={child.name} />
 
       <section aria-labelledby="child-today" className="space-y-3">
         <h2 id="child-today" className="font-display text-lg font-semibold">Idag</h2>

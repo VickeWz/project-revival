@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { AskParentTime } from '@/components/AskParentTime';
 import { LockSettingsDrawer } from '@/components/LockSettingsDrawer';
@@ -7,6 +8,7 @@ import { LockKeyhole, ShieldCheck, Unlock, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useDeviceRules } from '@/hooks/useDeviceRules';
 import { supabase } from '@/integrations/supabase/client';
+import { claimDailyScreenTimeOnce } from '@/lib/daily-screen-time';
 import { formatClock, minutesUntil } from '@/lib/device-rules';
 import { lockModeOf, remainingSeconds } from '@/lib/screen-time';
 import { activateTime, currentSession, screenTimeAvailable, screenTimePlugin, type ScreenTimeStatus } from '@/services/screenTime';
@@ -43,6 +45,12 @@ export function ScreenTimeControl() {
       if (refreshing || document.visibilityState === 'hidden') return;
       refreshing = true;
       try {
+        // Today's base time from the parent, once per day (the database never gives it twice).
+        const daily = await claimDailyScreenTimeOnce(profile.id);
+        if (daily && !cancelled) {
+          if (daily.expiredMinutes > 0) toast(`${daily.expiredMinutes} min oanvänd grundtid från i går har gått ut`);
+          if (daily.grantedMinutes > 0) toast.success(`+${daily.grantedMinutes} min grundtid för i dag`);
+        }
         const { data, error: balanceError } = await supabase.from('screen_time_balance')
           .select('minutes_remaining').eq('user_id', profile.id).maybeSingle();
         if (balanceError) throw balanceError;
