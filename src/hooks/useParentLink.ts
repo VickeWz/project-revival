@@ -2,6 +2,11 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
+// Every subscription gets its own realtime channel name. supabase.channel() hands back an already
+// subscribed channel with the same name (also one still closing), and adding a listener to it throws.
+// That crashed Hem when the parent-code form in the lock settings opened next to "Be om mer tid".
+let channelCount = 0;
+
 export interface ParentInfo {
   id: string;
   name: string;
@@ -58,7 +63,7 @@ export function useParentLink() {
     void load();
     const timer = setInterval(() => { if (!document.hidden) void load(); }, 3000);
     const channel = supabase
-      .channel(`parent-child-links-${childId}`)
+      .channel(`parent-child-links-${childId}-${++channelCount}`)
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "parent_child_links", filter: `child_id=eq.${childId}` },
