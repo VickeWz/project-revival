@@ -309,6 +309,71 @@ export type Database = {
           },
         ]
       }
+      device_change_attempts: {
+        Row: {
+          blocked_until: string | null
+          child_id: string
+          failed_attempts: number
+        }
+        Insert: {
+          blocked_until?: string | null
+          child_id: string
+          failed_attempts?: number
+        }
+        Update: {
+          blocked_until?: string | null
+          child_id?: string
+          failed_attempts?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_change_attempts_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      device_change_codes: {
+        Row: {
+          child_id: string
+          code_hash: string
+          consumed_at: string | null
+          created_by: string
+          expires_at: string
+        }
+        Insert: {
+          child_id: string
+          code_hash: string
+          consumed_at?: string | null
+          created_by: string
+          expires_at: string
+        }
+        Update: {
+          child_id?: string
+          code_hash?: string
+          consumed_at?: string | null
+          created_by?: string
+          expires_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "device_change_codes_child_id_fkey"
+            columns: ["child_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "device_change_codes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       downtime_schedules: {
         Row: {
           child_id: string
@@ -732,7 +797,9 @@ export type Database = {
         Returns: Json
       }
       consume_child_pairing_code: { Args: { p_code: string }; Returns: Json }
+      consume_device_change_code: { Args: { p_code: string }; Returns: Json }
       create_child_pairing_code: { Args: never; Returns: Json }
+      create_device_change_code: { Args: { p_child_id: string }; Returns: Json }
       grant_screen_time: {
         Args: {
           p_child_id: string
