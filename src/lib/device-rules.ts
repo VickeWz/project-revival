@@ -27,8 +27,21 @@ export interface LimitRow {
   app_name: string;
   daily_limit_minutes: number;
   is_enabled: boolean;
+  /** Android package names the parent picked in the parent app; empty when chosen on the phone. */
+  app_packages?: string[] | null;
 }
-export interface NativeLimit { id: string; minutes: number }
+/** `apps` only when a parent picked apps in the parent app; the phone's own choice is used otherwise. */
+export interface NativeLimit { id: string; minutes: number; apps?: string[] }
+
+/** An Android package name such as "com.zhiliaoapp.musically". */
+const PACKAGE_NAME = /^[A-Za-z0-9_]+(\.[A-Za-z0-9_]+)+$/;
+export const MAX_LIMIT_APPS = 200;
+
+/** Valid, unique, sorted package names (at most 200). */
+export function cleanPackages(packages: readonly unknown[] | null | undefined): string[] {
+  const valid = (packages ?? []).filter((pkg): pkg is string => typeof pkg === "string" && pkg.length <= 255 && PACKAGE_NAME.test(pkg));
+  return [...new Set(valid)].sort().slice(0, MAX_LIMIT_APPS);
+}
 
 /** "21:00" or "21:00:00" → minutes after midnight, or null. */
 export function clockToMinutes(value: string): number | null {
@@ -63,7 +76,10 @@ export function toNativeLimits(rows: readonly LimitRow[]): NativeLimit[] {
   return rows
     .filter((row) => row.is_enabled && Number.isInteger(row.daily_limit_minutes)
       && row.daily_limit_minutes >= MIN_LIMIT_MINUTES && row.daily_limit_minutes <= MAX_LIMIT_MINUTES)
-    .map((row) => ({ id: row.id, minutes: row.daily_limit_minutes }))
+    .map((row): NativeLimit => {
+      const apps = cleanPackages(row.app_packages);
+      return apps.length ? { id: row.id, minutes: row.daily_limit_minutes, apps } : { id: row.id, minutes: row.daily_limit_minutes };
+    })
     .sort((a, b) => a.id.localeCompare(b.id));
 }
 

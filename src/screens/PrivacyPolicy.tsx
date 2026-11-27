@@ -15,6 +15,7 @@ export default function PrivacyPolicy() {
         "E-postadress och namn för ditt konto",
         "Skärmtidssaldo och sparad aktivitet",
         "Kopplingar mellan föräldrar och barn",
+        "Om barnet har Android: namnen på apparna på telefonens hemskärm, så att föräldern kan välja appar för appgränser. Inga ikoner eller användningstider skickas.",
       ],
     },
     {

@@ -8,6 +8,10 @@ import { Switch } from "@/components/ui/switch";
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { AppScreen } from "@/components/layout/AppScreen";
 import { MinutePicker } from "@/components/MinutePicker";
+import { ChildAppPicker, describeApps } from "@/components/parent/ChildAppPicker";
+import { loadChildApps, type ChildApp } from "@/lib/child-apps";
+import { cleanPackages } from "@/lib/device-rules";
+import { untypedFrom } from "@/lib/untyped-db";
 import { useNavigate, useSearchParams } from "@/lib/router-compat";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -18,6 +22,8 @@ interface AppLimit {
   app_name: string;
   daily_limit_minutes: number;
   is_enabled: boolean;
+  /** Apps picked here (Android); empty when they are chosen on the phone. */
+  app_packages?: string[] | null;
 }
 
 const SUGGESTIONS = ["Sociala medier", "Spel", "Video", "Webben"];
@@ -26,8 +32,9 @@ const MAX_MINUTES = 240;
 const genitive = (name: string) => (/[sxz]$/i.test(name) ? name : `${name}s`);
 
 /**
- * Appgränser for one child (?childId=): a name and minutes per day. The apps for each limit are
- * chosen on the child's iPhone with a parent code, because Apple's app choices never leave the phone.
+ * Appgränser for one child (?childId=): a name and minutes per day. When the child has Android, the
+ * parent picks the apps right here from the list the phone shares (child_apps), and the phone applies
+ * them at once. On iPhone the apps are chosen on the phone with a parent code (Apple keeps them there).
  */
 export default function AppLimits() {
   const navigate = useNavigate();
@@ -42,16 +49,20 @@ export default function AppLimits() {
   const [name, setName] = useState("");
   const [minutes, setMinutes] = useState(30);
   const [saving, setSaving] = useState(false);
+  const [apps, setApps] = useState<ChildApp[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
+  const canPick = apps.length > 0;
 
   const fetchLimits = useCallback(async () => {
     if (!profile?.id || !childId) return;
+    // "*" also reads app_packages once the database has that column.
     const { data } = await supabase
       .from("app_limits")
-      .select("id, app_name, daily_limit_minutes, is_enabled")
+      .select("*")
       .eq("parent_id", profile.id)
       .eq("child_id", childId)
       .order("created_at", { ascending: true });
-    setLimits(data ?? []);
+    setLimits((data ?? []) as AppLimit[]);
     setLoading(false);
   }, [profile?.id, childId]);
 
@@ -60,15 +71,25 @@ export default function AppLimits() {
     void fetchLimits();
     void supabase.from("profiles").select("display_name").eq("id", childId).maybeSingle()
       .then(({ data }) => { if (data) setChildName(data.display_name); });
+    // The apps on the child's Android phone; none for iPhone (or before the phone has shared them).
+    loadChildApps(childId).then(setApps).catch(() => setApps([]));
   }, [childId, fetchLimits]);
 
   const back = () => navigate(childId ? `/parent?barn=${childId}` : "/parent");
-  const phone = childName ? `${genitive(childName)} iPhone` : "barnets iPhone";
+  const phone = childName ? `${genitive(childName)} telefon` : "barnets telefon";
 
   const open = (limit: AppLimit | "new") => {
     setEditing(limit);
     setName(limit === "new" ? "" : limit.app_name);
     setMinutes(limit === "new" ? 30 : limit.daily_limit_minutes);
+    setSelected(limit === "new" ? [] : cleanPackages(limit.app_packages));
+  };
+
+  // Picking apps fills in the name until the parent writes one of their own.
+  const pick = (next: string[]) => {
+    const before = describeApps(selected, apps).slice(0, 40);
+    if (!name.trim() || name === before) setName(describeApps(next, apps).slice(0, 40));
+    setSelected(next);
   };
 
   const save = async () => {
@@ -78,19 +99,30 @@ export default function AppLimits() {
       toast.error("Ge gränsen ett namn, högst 40 tecken.");
       return;
     }
+    if (canPick && selected.length === 0) {
+      toast.error("Välj minst en app.");
+      return;
+    }
     setSaving(true);
+    // Only send app_packages when apps were picked here, so it also works before that column exists
+    // (it is newer than the generated database types, hence untypedFrom).
+    const picked = canPick ? { app_packages: cleanPackages(selected) } : {};
     const { error } = editing === "new"
-      ? await supabase.from("app_limits").insert({
-          parent_id: profile.id, child_id: childId, app_name: trimmed, category: "Other", daily_limit_minutes: minutes, is_enabled: true,
+      ? await untypedFrom("app_limits").insert({
+          parent_id: profile.id, child_id: childId, app_name: trimmed, category: "Other", daily_limit_minutes: minutes, is_enabled: true, ...picked,
         })
-      : await supabase.from("app_limits").update({ app_name: trimmed, daily_limit_minutes: minutes }).eq("id", editing.id);
+      : await untypedFrom("app_limits").update({ app_name: trimmed, daily_limit_minutes: minutes, ...picked }).eq("id", editing.id);
     setSaving(false);
     if (error) {
-      toast.error(error.code === "23505" ? "Det finns redan en gräns med det namnet." : "Kunde inte spara gränsen.");
+      toast.error(
+        error.code === "23505" ? "Det finns redan en gräns med det namnet."
+        : error.code === "PGRST204" || error.code === "42703" ? "Appvalen är inte aktiverade i databasen än."
+        : "Kunde inte spara gränsen.",
+      );
       return;
     }
     toast.success(editing === "new" ? "Gränsen är tillagd" : "Gränsen är ändrad", {
-      description: `Välj apparna på ${phone} med en kod från dig.`,
+      description: canPick ? `Gäller direkt på ${phone}.` : `Välj apparna på ${phone} med en kod från dig.`,
     });
     setEditing(null);
     void fetchLimits();
@@ -138,7 +170,10 @@ export default function AppLimits() {
                 </span>
                 <span className="min-w-0">
                   <span className="block truncate font-semibold">{limit.app_name}</span>
-                  <span className="block text-sm text-muted-foreground">{limit.daily_limit_minutes} min per dag</span>
+                  <span className="block truncate text-sm text-muted-foreground">
+                    {limit.daily_limit_minutes} min per dag
+                    {describeApps(cleanPackages(limit.app_packages), apps) && ` · ${describeApps(cleanPackages(limit.app_packages), apps)}`}
+                  </span>
                 </span>
               </button>
               <Switch
@@ -157,7 +192,11 @@ export default function AppLimits() {
       </Button>
 
       <ul className="space-y-1.5 rounded-2xl border border-border bg-card p-4 text-sm text-muted-foreground">
-        <li>• Apparna för varje gräns väljs på {phone} under Hem → Ändra appar och lås, med en kod från dig. Apple låter inga appval lämna telefonen.</li>
+        {canPick ? (
+          <li>• Du väljer apparna här bland apparna på {phone}. Ändringar gäller direkt när telefonen är på.</li>
+        ) : (
+          <li>• Apparna för varje gräns väljs på {phone} under Hem → Ändra appar och lås, med en kod från dig. Har barnet Android visas telefonens appar här när GameRun har öppnats på den.</li>
+        )}
         <li>• När tiden är slut spärras apparna resten av dagen. De öppnas igen vid midnatt.</li>
         <li>• Ändrar du en gräns eller apparna börjar dagens användning räknas från noll.</li>
       </ul>
@@ -167,8 +206,19 @@ export default function AppLimits() {
           <div className="mx-auto w-full max-w-lg space-y-6 px-5 bottom-bar-safe">
             <DrawerHeader className="px-0 text-left">
               <DrawerTitle className="font-display text-xl">{editing === "new" ? "Ny appgräns" : "Ändra appgräns"}</DrawerTitle>
-              <DrawerDescription>Namnet visas för barnet när apparna väljs på {phone}.</DrawerDescription>
+              <DrawerDescription>
+                {canPick ? `Välj apparna på ${phone} och hur länge de får användas per dag.` : `Namnet visas för barnet när apparna väljs på ${phone}.`}
+              </DrawerDescription>
             </DrawerHeader>
+            {canPick && (
+              <div className="space-y-2">
+                <div className="flex items-baseline justify-between">
+                  <Label className="font-semibold text-foreground">Appar</Label>
+                  <span className="text-sm text-muted-foreground">{selected.length} {selected.length === 1 ? "vald" : "valda"}</span>
+                </div>
+                <ChildAppPicker apps={apps} selected={selected} onChange={pick} disabled={saving} />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="limit-name" className="font-semibold text-foreground">Namn</Label>
               <Input
@@ -176,10 +226,10 @@ export default function AppLimits() {
                 value={name}
                 maxLength={40}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Till exempel Sociala medier"
+                placeholder={canPick ? "Fylls i när du väljer appar" : "Till exempel Sociala medier"}
                 className="h-14 rounded-2xl border-border bg-card text-base"
               />
-              <div className="flex flex-wrap gap-2 pt-1">
+              {!canPick && <div className="flex flex-wrap gap-2 pt-1">
                 {SUGGESTIONS.map((suggestion) => (
                   <button
                     key={suggestion}
@@ -193,11 +243,11 @@ export default function AppLimits() {
                     {suggestion}
                   </button>
                 ))}
-              </div>
+              </div>}
             </div>
             <MinutePicker label="Minuter per dag" value={minutes} onChange={setMinutes} min={MIN_MINUTES} max={MAX_MINUTES} presets={[15, 30, 60, 90]} disabled={saving} />
             <div className="space-y-2">
-              <Button className="h-14 w-full text-base" onClick={() => void save()} disabled={saving || !name.trim()}>
+              <Button className="h-14 w-full text-base" onClick={() => void save()} disabled={saving || !name.trim() || (canPick && selected.length === 0)}>
                 {saving && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
                 {editing === "new" ? "Lägg till" : "Spara"}
               </Button>

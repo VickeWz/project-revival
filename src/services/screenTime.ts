@@ -31,6 +31,8 @@ interface ScreenTimePlugin {
   setLimits(options: { json: string }): Promise<ScreenTimeStatus>;
   selectLimitApps(options: { limitId: string; name: string }): Promise<ScreenTimeStatus>;
   activate(options: { sessionId: string; expiresAt: number }): Promise<ScreenTimeStatus>;
+  /** Android only (project-revival-android): the home-screen apps, for picking apps in the parent app. */
+  installedApps(): Promise<{ apps: { id: string; name: string }[] }>;
 }
 export const screenTimePlugin = registerPlugin<ScreenTimePlugin>('GameRunScreenTime');
 export const screenTimeAvailable = () => Capacitor.getPlatform() === 'ios' && Capacitor.isPluginAvailable('GameRunScreenTime');
